@@ -73,6 +73,36 @@ func (s *Server) ReadObject(ctx context.Context, req *cnode.ReadObjectRequest) (
 }
 
 func (s *Server) UploadObject(srv cnode.Storage_UploadObjectServer) (err error) {
-	err = s.local.UploadObject(srv)
+	var first *cnode.UploadObjectRequest
+	if first, err = srv.Recv(); err != nil {
+		return
+	}
+
+	var uploader storage.ObjectUploader
+	if uploader, err = s.local.UploadObject(srv.Context(), first.Bucket, first.Object); err != nil {
+		return
+	}
+	uploader.UploadCh() <- first.Content
+
+	defer func() {
+		close(uploader.UploadCh())
+	}()
+	var req *cnode.UploadObjectRequest
+	for {
+		select {
+		case err = <-uploader.Done():
+			return
+		default:
+		}
+		if req, err = srv.Recv(); err != nil {
+			return
+		}
+		if req == nil {
+			break
+		}
+		uploader.UploadCh() <- req.Content
+	}
+
+	srv.SendAndClose(&cnode.UploadObjectResponse{})
 	return
 }

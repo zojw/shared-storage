@@ -1,0 +1,89 @@
+// Copyright 2021 The Engula Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+option go_package = "github.com/engula/shared-storage/proto/cnode";
+
+package engula.storage.v1;
+
+service Storage {
+  // APIs to manipulate a storage.
+
+  rpc CreateBucket(CreateBucketRequest) returns (CreateBucketResponse) {}
+
+  rpc DeleteBucket(DeleteBucketRequest) returns (DeleteBucketResponse) {}
+
+  rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
+
+  // APIs to manipulate a bucket.
+
+  rpc UploadObject(stream UploadObjectRequest) returns (UploadObjectResponse) {}
+
+  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse) {}
+
+  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
+
+  // APIs to manipulate an object.
+
+  rpc ReadObject(ReadObjectRequest) returns (ReadObjectResponse) {}
+}
+
+message CreateBucketRequest { string bucket = 1; }
+
+message CreateBucketResponse {}
+
+message DeleteBucketRequest { string bucket = 1; }
+
+message DeleteBucketResponse {}
+
+message UploadObjectRequest {
+  string bucket = 1;
+  string object = 2;
+  bytes content = 3;
+  bool replica_request = 4;
+  repeated string replica_chain = 5;
+}
+
+message ListBucketsRequest {}
+
+message ListBucketsResponse { repeated string buckets = 1; }
+
+message ListObjectsRequest { string bucket = 1; }
+
+message ListObjectsResponse { repeated string objects = 1; }
+
+message UploadObjectResponse {}
+
+message DeleteObjectRequest {
+  string bucket = 1;
+  string object = 2;
+}
+
+message DeleteObjectResponse {}
+
+message ReadObjectRequest {
+  string bucket = 1;
+  string object = 2;
+  int32 pos = 3;
+  int32 len = 4;
+}
+
+message ReadObjectResponse { bytes content = 1; }

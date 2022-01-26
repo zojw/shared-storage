@@ -11,11 +11,10 @@ type Storage interface {
 	DeleteObject(ctx context.Context, bucket, object string) (err error)
 	ListObjects(ctx context.Context, bucket string) (objects []string, err error)
 	ReadObject(ctx context.Context, bucket, object string, pos, len int32) (bytes []byte, err error)
-
-	UploadObject(ctx context.Context, bucket, object string) (uploader ObjectUploader, err error)
+	PutObject(ctx context.Context, bucket, object string) (writer ObjectWriter, err error)
 }
 
-type ObjectUploader interface {
-	UploadCh() chan<- []byte
-	Done() <-chan error
+type ObjectWriter interface {
+	Write(ctx context.Context, p []byte) (err error)
+	Finish(ctx context.Context) (err error)
 }

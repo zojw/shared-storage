@@ -35,7 +35,7 @@ type s3Storage struct {
 	client   *s3.S3
 }
 
-func NewStorage(ctx context.Context, tenant, s3Bucket, region string) (s Storage, err error) {
+func NewS3(ctx context.Context, tenant, s3Bucket, region string) (s Storage, err error) {
 	var ss *session.Session
 	if ss, err = session.NewSession(); err != nil {
 		return
@@ -51,7 +51,7 @@ func NewStorage(ctx context.Context, tenant, s3Bucket, region string) (s Storage
 	return
 }
 
-func newS3StorageForTesting(ctx context.Context, tenant, s3Bucket, region string) (s Storage, err error) {
+func newS3ForTesting(ctx context.Context, tenant, s3Bucket, region string) (s Storage, err error) {
 	ss := unit.Session
 	client := s3.New(ss)
 	client.Handlers.Send.Clear()

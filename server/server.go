@@ -1,14 +1,15 @@
-package cnode
+package server
 
 import (
 	"context"
 
-	"github.com/engula/shared-storage/cnode/storage"
-	cnode "github.com/engula/shared-storage/proto"
+	"github.com/engula/shared-storage/proto/server"
+	"github.com/engula/shared-storage/server/storage"
 )
 
 var (
-	_ cnode.StorageServer = &Server{}
+	_ server.ObjectServiceServer = &Server{}
+	_ server.BucketServiceServer = &Server{}
 )
 
 type Server struct {
@@ -25,60 +26,60 @@ func NewServer(base, local, replica storage.Storage) *Server {
 	}
 }
 
-func (s *Server) CreateBucket(ctx context.Context, req *cnode.CreateBucketRequest) (resp *cnode.CreateBucketResponse, err error) {
+func (s *Server) CreateBucket(ctx context.Context, req *server.CreateBucketRequest) (resp *server.CreateBucketResponse, err error) {
 	if err = s.local.CreateBucket(ctx, req.Bucket); err != nil {
 		return
 	}
-	resp = &cnode.CreateBucketResponse{}
+	resp = &server.CreateBucketResponse{}
 	return
 }
-func (s *Server) DeleteBucket(ctx context.Context, req *cnode.DeleteBucketRequest) (resp *cnode.DeleteBucketResponse, err error) {
+func (s *Server) DeleteBucket(ctx context.Context, req *server.DeleteBucketRequest) (resp *server.DeleteBucketResponse, err error) {
 	if err = s.local.DeleteBucket(ctx, req.Bucket); err != nil {
 		return
 	}
-	resp = &cnode.DeleteBucketResponse{}
+	resp = &server.DeleteBucketResponse{}
 	return
 }
-func (s *Server) ListBuckets(ctx context.Context, _ *cnode.ListBucketsRequest) (resp *cnode.ListBucketsResponse, err error) {
+func (s *Server) ListBuckets(ctx context.Context, _ *server.ListBucketsRequest) (resp *server.ListBucketsResponse, err error) {
 	var buckets []string
 	if buckets, err = s.local.ListBuckets(ctx); err != nil {
 		return
 	}
-	resp = &cnode.ListBucketsResponse{Buckets: buckets}
+	resp = &server.ListBucketsResponse{Buckets: buckets}
 	return
 }
 
-func (s *Server) DeleteObject(ctx context.Context, req *cnode.DeleteObjectRequest) (resp *cnode.DeleteObjectResponse, err error) {
+func (s *Server) DeleteObject(ctx context.Context, req *server.DeleteObjectRequest) (resp *server.DeleteObjectResponse, err error) {
 	if err = s.local.DeleteObject(ctx, req.Bucket, req.Object); err != nil {
 		return
 	}
-	resp = &cnode.DeleteObjectResponse{}
+	resp = &server.DeleteObjectResponse{}
 	return
 }
-func (s *Server) ListObjects(ctx context.Context, req *cnode.ListObjectsRequest) (resp *cnode.ListObjectsResponse, err error) {
+func (s *Server) ListObjects(ctx context.Context, req *server.ListObjectsRequest) (resp *server.ListObjectsResponse, err error) {
 	var objects []string
 	if objects, err = s.local.ListObjects(ctx, req.Bucket); err != nil {
 		return
 	}
-	resp = &cnode.ListObjectsResponse{Objects: objects}
+	resp = &server.ListObjectsResponse{Objects: objects}
 	return
 }
-func (s *Server) ReadObject(ctx context.Context, req *cnode.ReadObjectRequest) (resp *cnode.ReadObjectResponse, err error) {
+func (s *Server) ReadObject(ctx context.Context, req *server.ReadObjectRequest) (resp *server.ReadObjectResponse, err error) {
 	var result []byte
 	if result, err = s.local.ReadObject(ctx, req.Bucket, req.Object, req.Pos, req.Len); err != nil {
 		return
 	}
-	resp = &cnode.ReadObjectResponse{Content: result}
+	resp = &server.ReadObjectResponse{Content: result}
 	return
 }
 
-func (s *Server) UploadObject(srv cnode.Storage_UploadObjectServer) (err error) {
-	var first *cnode.UploadObjectRequest
+func (s *Server) UploadObject(srv server.ObjectService_UploadObjectServer) (err error) {
+	var first *server.UploadObjectRequest
 	if first, err = srv.Recv(); err != nil {
 		return
 	}
 	if first == nil {
-		srv.SendAndClose(&cnode.UploadObjectResponse{})
+		srv.SendAndClose(&server.UploadObjectResponse{})
 		return
 	}
 
@@ -92,7 +93,7 @@ func (s *Server) UploadObject(srv cnode.Storage_UploadObjectServer) (err error) 
 	if err = s.write(ctx, writers, first.Content); err != nil {
 		return
 	}
-	var req *cnode.UploadObjectRequest
+	var req *server.UploadObjectRequest
 	for {
 		if req, err = srv.Recv(); err != nil {
 			return
@@ -105,7 +106,7 @@ func (s *Server) UploadObject(srv cnode.Storage_UploadObjectServer) (err error) 
 		}
 	}
 
-	srv.SendAndClose(&cnode.UploadObjectResponse{})
+	srv.SendAndClose(&server.UploadObjectResponse{})
 	return
 }
 

@@ -2,25 +2,17 @@ package storage_test
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/engula/shared-storage/cnode/storage"
+	"github.com/engula/shared-storage/server/storage"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLocalStorage(t *testing.T) {
+func TestS3Storage(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
-
-	root := filepath.Join(os.TempDir(), fmt.Sprintf("engula-test-%d", time.Now().UnixNano()))
-	defer func() {
-		os.RemoveAll(root)
-	}()
-	s, err := storage.NewLocal(ctx, root)
+	const s3Bucket = "engula-test-4"
+	s, err := storage.NewS3ForTesting(ctx, "t1", s3Bucket, "us-west-2")
 	assert.NoError(err)
 
 	const testBucket1 = "testbucket1"

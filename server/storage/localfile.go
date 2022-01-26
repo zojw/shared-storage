@@ -9,37 +9,37 @@ import (
 )
 
 var (
-	_ Storage = &localStorage{}
+	_ Storage = &localFileStorage{}
 )
 
-type localStorage struct {
+type localFileStorage struct {
 	rootPath string
 }
 
-func NewLocal(ctx context.Context, rootPath string) (s Storage, err error) {
-	s = &localStorage{rootPath: filepath.Join(rootPath, objectCategory)}
+func NewLocalFile(ctx context.Context, rootPath string) (s Storage, err error) {
+	s = &localFileStorage{rootPath: filepath.Join(rootPath, objectCategory)}
 	return
 }
 
-func (s *localStorage) bucketPath(bucket string) string {
+func (s *localFileStorage) bucketPath(bucket string) string {
 	return filepath.Join(s.rootPath, bucket)
 }
 
-func (s *localStorage) objectPath(bucket, object string) string {
+func (s *localFileStorage) objectPath(bucket, object string) string {
 	return filepath.Join(s.rootPath, bucket, object)
 }
 
-func (s *localStorage) CreateBucket(ctx context.Context, bucket string) (err error) {
+func (s *localFileStorage) CreateBucket(ctx context.Context, bucket string) (err error) {
 	err = os.MkdirAll(s.bucketPath(bucket), os.ModePerm)
 	return
 }
 
-func (s *localStorage) DeleteBucket(ctx context.Context, bucket string) (err error) {
+func (s *localFileStorage) DeleteBucket(ctx context.Context, bucket string) (err error) {
 	err = os.RemoveAll(s.bucketPath(bucket))
 	return
 }
 
-func (s *localStorage) ListBuckets(ctx context.Context) (buckets []string, err error) {
+func (s *localFileStorage) ListBuckets(ctx context.Context) (buckets []string, err error) {
 	var files []fs.FileInfo
 	if files, err = ioutil.ReadDir(s.rootPath); err != nil {
 		return
@@ -51,12 +51,12 @@ func (s *localStorage) ListBuckets(ctx context.Context) (buckets []string, err e
 	return
 }
 
-func (s *localStorage) DeleteObject(ctx context.Context, bucket, object string) (err error) {
+func (s *localFileStorage) DeleteObject(ctx context.Context, bucket, object string) (err error) {
 	err = os.Remove(s.objectPath(bucket, object))
 	return
 }
 
-func (s *localStorage) ListObjects(ctx context.Context, bucket string) (objects []string, err error) {
+func (s *localFileStorage) ListObjects(ctx context.Context, bucket string) (objects []string, err error) {
 	var files []fs.FileInfo
 	if files, err = ioutil.ReadDir(s.bucketPath(bucket)); err != nil {
 		return
@@ -68,7 +68,7 @@ func (s *localStorage) ListObjects(ctx context.Context, bucket string) (objects 
 	return
 }
 
-func (s *localStorage) ReadObject(ctx context.Context, bucket, object string, pos, len int32) (bytes []byte, err error) {
+func (s *localFileStorage) ReadObject(ctx context.Context, bucket, object string, pos, len int32) (bytes []byte, err error) {
 	var f *os.File
 	if f, err = os.OpenFile(s.objectPath(bucket, object), os.O_RDONLY, 0666); err != nil {
 		return
@@ -82,7 +82,7 @@ func (s *localStorage) ReadObject(ctx context.Context, bucket, object string, po
 	return
 }
 
-func (s *localStorage) PutObject(ctx context.Context, bucket, object string) (writer ObjectWriter, err error) {
+func (s *localFileStorage) PutObject(ctx context.Context, bucket, object string) (writer ObjectWriter, err error) {
 	var f *os.File
 	if f, err = os.OpenFile(s.objectPath(bucket, object), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666); err != nil {
 		return

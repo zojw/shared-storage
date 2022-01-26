@@ -1,4 +1,4 @@
-// Copyright 2021 The Engula Authors.
+// Copyright 2022 The Engula Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,30 +20,26 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 
-option go_package = "github.com/engula/shared-storage/proto/cnode";
+option go_package = "github.com/engula/shared-storage/proto/server";
 
 package engula.storage.v1;
 
-service Storage {
-  // APIs to manipulate a storage.
-
+service BucketService {
   rpc CreateBucket(CreateBucketRequest) returns (CreateBucketResponse) {}
 
   rpc DeleteBucket(DeleteBucketRequest) returns (DeleteBucketResponse) {}
 
   rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
 
-  // APIs to manipulate a bucket.
+  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
+}
 
+service ObjectService {
   rpc UploadObject(stream UploadObjectRequest) returns (UploadObjectResponse) {}
 
-  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse) {}
-
-  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
-
-  // APIs to manipulate an object.
-
   rpc ReadObject(ReadObjectRequest) returns (ReadObjectResponse) {}
+
+  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse) {}
 }
 
 message CreateBucketRequest { string bucket = 1; }
@@ -54,14 +50,6 @@ message DeleteBucketRequest { string bucket = 1; }
 
 message DeleteBucketResponse {}
 
-message UploadObjectRequest {
-  string bucket = 1;
-  string object = 2;
-  bytes content = 3;
-  bool replica_request = 4;
-  repeated string replica_chain = 5;
-}
-
 message ListBucketsRequest {}
 
 message ListBucketsResponse { repeated string buckets = 1; }
@@ -70,14 +58,15 @@ message ListObjectsRequest { string bucket = 1; }
 
 message ListObjectsResponse { repeated string objects = 1; }
 
-message UploadObjectResponse {}
-
-message DeleteObjectRequest {
+message UploadObjectRequest {
   string bucket = 1;
   string object = 2;
+  bytes content = 3;
+  bool replica_request = 4;
+  repeated string replica_chain = 5;
 }
 
-message DeleteObjectResponse {}
+message UploadObjectResponse {}
 
 message ReadObjectRequest {
   string bucket = 1;
@@ -87,3 +76,10 @@ message ReadObjectRequest {
 }
 
 message ReadObjectResponse { bytes content = 1; }
+
+message DeleteObjectRequest {
+  string bucket = 1;
+  string object = 2;
+}
+
+message DeleteObjectResponse {}

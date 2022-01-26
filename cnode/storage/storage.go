@@ -4,6 +4,11 @@ import (
 	"context"
 )
 
+const (
+	objectCategory = "buckets"
+	streamCategory = "streams"
+)
+
 type Storage interface {
 	CreateBucket(ctx context.Context, bucket string) (err error)
 	DeleteBucket(ctx context.Context, bucket string) (err error)

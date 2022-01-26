@@ -77,32 +77,44 @@ func (s *Server) UploadObject(srv cnode.Storage_UploadObjectServer) (err error) 
 	if first, err = srv.Recv(); err != nil {
 		return
 	}
-
-	var uploader storage.ObjectUploader
-	if uploader, err = s.local.UploadObject(srv.Context(), first.Bucket, first.Object); err != nil {
+	if first == nil {
+		srv.SendAndClose(&cnode.UploadObjectResponse{})
 		return
 	}
-	uploader.UploadCh() <- first.Content
 
-	defer func() {
-		close(uploader.UploadCh())
-	}()
+	ctx := srv.Context()
+
+	var localWriter, baseWriter storage.ObjectWriter
+	if localWriter, err = s.local.PutObject(ctx, first.Bucket, first.Object); err != nil {
+		return
+	}
+	writers := []storage.ObjectWriter{baseWriter, localWriter}
+	if err = s.write(ctx, writers, first.Content); err != nil {
+		return
+	}
 	var req *cnode.UploadObjectRequest
 	for {
-		select {
-		case err = <-uploader.Done():
-			return
-		default:
-		}
 		if req, err = srv.Recv(); err != nil {
 			return
 		}
 		if req == nil {
 			break
 		}
-		uploader.UploadCh() <- req.Content
+		if err = s.write(ctx, writers, first.Content); err != nil {
+			return
+		}
 	}
 
 	srv.SendAndClose(&cnode.UploadObjectResponse{})
+	return
+}
+
+func (s *Server) write(ctx context.Context, ws []storage.ObjectWriter, content []byte) (err error) {
+	// TODO: parallel write
+	for _, w := range ws {
+		if err = w.Write(ctx, content); err != nil {
+			return
+		}
+	}
 	return
 }

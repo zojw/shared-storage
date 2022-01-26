@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/awstesting/unit"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -19,8 +20,7 @@ var (
 )
 
 const (
-	objectCategory = "buckets"
-	metaPrefix     = "engula-meta"
+	metaPrefix = "engula-meta"
 )
 
 var (
@@ -35,20 +35,26 @@ type s3Storage struct {
 	client   *s3.S3
 }
 
-func (s *s3Storage) Init(ctx context.Context) (err error) {
-	return
-}
-
-func (s *s3Storage) Destory(ctx context.Context) (err error) {
-	return
-}
-
-func New(ctx context.Context, tenant, s3Bucket, region string) (s Storage, err error) {
+func NewStorage(ctx context.Context, tenant, s3Bucket, region string) (s Storage, err error) {
 	var ss *session.Session
 	if ss, err = session.NewSession(); err != nil {
 		return
 	}
 	client := s3.New(ss, &aws.Config{Region: &region})
+
+	s3 := &s3Storage{tenant: tenant, s3Bucket: &s3Bucket, category: objectCategory, client: client}
+	if err = s3.createS3BucketIfNotExist(ctx); err != nil {
+		return
+	}
+	s = s3
+
+	return
+}
+
+func newS3StorageForTesting(ctx context.Context, tenant, s3Bucket, region string) (s Storage, err error) {
+	ss := unit.Session
+	client := s3.New(ss)
+	client.Handlers.Send.Clear()
 
 	s3 := &s3Storage{tenant: tenant, s3Bucket: &s3Bucket, category: objectCategory, client: client}
 	if err = s3.createS3BucketIfNotExist(ctx); err != nil {
@@ -185,6 +191,7 @@ type s3Uploader struct {
 
 func (u *s3Uploader) Write(ctx context.Context, p []byte) (err error) {
 	u.buf = append(u.buf, p...)
+	// TODO: start upload early when buf is enough for a part.
 	return
 }
 

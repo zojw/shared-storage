@@ -17,6 +17,7 @@ import (
 
 func main() {
 	ctx := context.Background()
+	serverId := uint32(1)
 	s3, err := storage.NewS3(ctx, "tenant1", "bucket1", "us-west-1")
 	if err != nil {
 		log.Fatal(err)
@@ -25,7 +26,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	srv := server.NewServer(s3, localFile, nil)
+	status, err := server.NewStatus(ctx, localFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	srv := server.NewServer(serverId, s3, localFile, nil, status)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 8081))
 	if err != nil {
 		log.Fatal(err)

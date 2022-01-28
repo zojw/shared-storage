@@ -42,6 +42,10 @@ service ObjectService {
   rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse) {}
 }
 
+service CacheNodeService {
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+}
+
 message CreateBucketRequest { string bucket = 1; }
 
 message CreateBucketResponse {}
@@ -83,3 +87,35 @@ message DeleteObjectRequest {
 }
 
 message DeleteObjectResponse {}
+
+message HeartbeatRequest {
+  uint32 server_id = 1;
+  uint64 beat_seq = 2;
+  uint64 last_beat_seq = 3;
+}
+
+message HeartbeatResponse {
+  uint64 beat_seq = 1;
+  Status status = 2;
+}
+
+message Status {
+  ObjectEvent object_event = 1;
+}
+
+message ObjectEvent {
+  enum EventType {
+		Full = 0;
+		Increment = 1;
+	}
+  EventType typ = 1;
+  repeated string bucket_added = 2;
+  repeated string bucket_delete = 3;
+  repeated BucketObject object_added = 4;
+  repeated BucketObject object_delete = 5;
+}
+
+message BucketObject {
+  string bucket = 1;
+  string object = 2;
+}

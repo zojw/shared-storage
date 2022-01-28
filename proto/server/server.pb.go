@@ -27,6 +27,31 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+type ObjectEvent_EventType int32
+
+const (
+	ObjectEvent_Full      ObjectEvent_EventType = 0
+	ObjectEvent_Increment ObjectEvent_EventType = 1
+)
+
+var ObjectEvent_EventType_name = map[int32]string{
+	0: "Full",
+	1: "Increment",
+}
+
+var ObjectEvent_EventType_value = map[string]int32{
+	"Full":      0,
+	"Increment": 1,
+}
+
+func (x ObjectEvent_EventType) String() string {
+	return proto.EnumName(ObjectEvent_EventType_name, int32(x))
+}
+
+func (ObjectEvent_EventType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{17, 0}
+}
+
 type CreateBucketRequest struct {
 	Bucket               string   `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -199,6 +224,186 @@ func (m *DeleteBucketResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DeleteBucketResponse proto.InternalMessageInfo
 
+type ListBucketsRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListBucketsRequest) Reset()         { *m = ListBucketsRequest{} }
+func (m *ListBucketsRequest) String() string { return proto.CompactTextString(m) }
+func (*ListBucketsRequest) ProtoMessage()    {}
+func (*ListBucketsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{4}
+}
+func (m *ListBucketsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListBucketsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListBucketsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListBucketsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListBucketsRequest.Merge(m, src)
+}
+func (m *ListBucketsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListBucketsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListBucketsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListBucketsRequest proto.InternalMessageInfo
+
+type ListBucketsResponse struct {
+	Buckets              []string `protobuf:"bytes,1,rep,name=buckets,proto3" json:"buckets,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListBucketsResponse) Reset()         { *m = ListBucketsResponse{} }
+func (m *ListBucketsResponse) String() string { return proto.CompactTextString(m) }
+func (*ListBucketsResponse) ProtoMessage()    {}
+func (*ListBucketsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{5}
+}
+func (m *ListBucketsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListBucketsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListBucketsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListBucketsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListBucketsResponse.Merge(m, src)
+}
+func (m *ListBucketsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListBucketsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListBucketsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListBucketsResponse proto.InternalMessageInfo
+
+func (m *ListBucketsResponse) GetBuckets() []string {
+	if m != nil {
+		return m.Buckets
+	}
+	return nil
+}
+
+type ListObjectsRequest struct {
+	Bucket               string   `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListObjectsRequest) Reset()         { *m = ListObjectsRequest{} }
+func (m *ListObjectsRequest) String() string { return proto.CompactTextString(m) }
+func (*ListObjectsRequest) ProtoMessage()    {}
+func (*ListObjectsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{6}
+}
+func (m *ListObjectsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListObjectsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListObjectsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListObjectsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListObjectsRequest.Merge(m, src)
+}
+func (m *ListObjectsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListObjectsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListObjectsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListObjectsRequest proto.InternalMessageInfo
+
+func (m *ListObjectsRequest) GetBucket() string {
+	if m != nil {
+		return m.Bucket
+	}
+	return ""
+}
+
+type ListObjectsResponse struct {
+	Objects              []string `protobuf:"bytes,1,rep,name=objects,proto3" json:"objects,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListObjectsResponse) Reset()         { *m = ListObjectsResponse{} }
+func (m *ListObjectsResponse) String() string { return proto.CompactTextString(m) }
+func (*ListObjectsResponse) ProtoMessage()    {}
+func (*ListObjectsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{7}
+}
+func (m *ListObjectsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListObjectsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListObjectsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListObjectsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListObjectsResponse.Merge(m, src)
+}
+func (m *ListObjectsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListObjectsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListObjectsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListObjectsResponse proto.InternalMessageInfo
+
+func (m *ListObjectsResponse) GetObjects() []string {
+	if m != nil {
+		return m.Objects
+	}
+	return nil
+}
+
 type UploadObjectRequest struct {
 	Bucket               string   `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Object               string   `protobuf:"bytes,2,opt,name=object,proto3" json:"object,omitempty"`
@@ -214,7 +419,7 @@ func (m *UploadObjectRequest) Reset()         { *m = UploadObjectRequest{} }
 func (m *UploadObjectRequest) String() string { return proto.CompactTextString(m) }
 func (*UploadObjectRequest) ProtoMessage()    {}
 func (*UploadObjectRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{4}
+	return fileDescriptor_aedf378765df4bae, []int{8}
 }
 func (m *UploadObjectRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -278,186 +483,6 @@ func (m *UploadObjectRequest) GetReplicaChain() []string {
 	return nil
 }
 
-type ListBucketsRequest struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ListBucketsRequest) Reset()         { *m = ListBucketsRequest{} }
-func (m *ListBucketsRequest) String() string { return proto.CompactTextString(m) }
-func (*ListBucketsRequest) ProtoMessage()    {}
-func (*ListBucketsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{5}
-}
-func (m *ListBucketsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ListBucketsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListBucketsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ListBucketsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListBucketsRequest.Merge(m, src)
-}
-func (m *ListBucketsRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *ListBucketsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ListBucketsRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ListBucketsRequest proto.InternalMessageInfo
-
-type ListBucketsResponse struct {
-	Buckets              []string `protobuf:"bytes,1,rep,name=buckets,proto3" json:"buckets,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ListBucketsResponse) Reset()         { *m = ListBucketsResponse{} }
-func (m *ListBucketsResponse) String() string { return proto.CompactTextString(m) }
-func (*ListBucketsResponse) ProtoMessage()    {}
-func (*ListBucketsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{6}
-}
-func (m *ListBucketsResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ListBucketsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListBucketsResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ListBucketsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListBucketsResponse.Merge(m, src)
-}
-func (m *ListBucketsResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *ListBucketsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ListBucketsResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ListBucketsResponse proto.InternalMessageInfo
-
-func (m *ListBucketsResponse) GetBuckets() []string {
-	if m != nil {
-		return m.Buckets
-	}
-	return nil
-}
-
-type ListObjectsRequest struct {
-	Bucket               string   `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ListObjectsRequest) Reset()         { *m = ListObjectsRequest{} }
-func (m *ListObjectsRequest) String() string { return proto.CompactTextString(m) }
-func (*ListObjectsRequest) ProtoMessage()    {}
-func (*ListObjectsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{7}
-}
-func (m *ListObjectsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ListObjectsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListObjectsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ListObjectsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListObjectsRequest.Merge(m, src)
-}
-func (m *ListObjectsRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *ListObjectsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ListObjectsRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ListObjectsRequest proto.InternalMessageInfo
-
-func (m *ListObjectsRequest) GetBucket() string {
-	if m != nil {
-		return m.Bucket
-	}
-	return ""
-}
-
-type ListObjectsResponse struct {
-	Objects              []string `protobuf:"bytes,1,rep,name=objects,proto3" json:"objects,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ListObjectsResponse) Reset()         { *m = ListObjectsResponse{} }
-func (m *ListObjectsResponse) String() string { return proto.CompactTextString(m) }
-func (*ListObjectsResponse) ProtoMessage()    {}
-func (*ListObjectsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{8}
-}
-func (m *ListObjectsResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ListObjectsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ListObjectsResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ListObjectsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListObjectsResponse.Merge(m, src)
-}
-func (m *ListObjectsResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *ListObjectsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ListObjectsResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ListObjectsResponse proto.InternalMessageInfo
-
-func (m *ListObjectsResponse) GetObjects() []string {
-	if m != nil {
-		return m.Objects
-	}
-	return nil
-}
-
 type UploadObjectResponse struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -497,100 +522,6 @@ func (m *UploadObjectResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UploadObjectResponse proto.InternalMessageInfo
 
-type DeleteObjectRequest struct {
-	Bucket               string   `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Object               string   `protobuf:"bytes,2,opt,name=object,proto3" json:"object,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *DeleteObjectRequest) Reset()         { *m = DeleteObjectRequest{} }
-func (m *DeleteObjectRequest) String() string { return proto.CompactTextString(m) }
-func (*DeleteObjectRequest) ProtoMessage()    {}
-func (*DeleteObjectRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{10}
-}
-func (m *DeleteObjectRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *DeleteObjectRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DeleteObjectRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *DeleteObjectRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteObjectRequest.Merge(m, src)
-}
-func (m *DeleteObjectRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *DeleteObjectRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_DeleteObjectRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DeleteObjectRequest proto.InternalMessageInfo
-
-func (m *DeleteObjectRequest) GetBucket() string {
-	if m != nil {
-		return m.Bucket
-	}
-	return ""
-}
-
-func (m *DeleteObjectRequest) GetObject() string {
-	if m != nil {
-		return m.Object
-	}
-	return ""
-}
-
-type DeleteObjectResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *DeleteObjectResponse) Reset()         { *m = DeleteObjectResponse{} }
-func (m *DeleteObjectResponse) String() string { return proto.CompactTextString(m) }
-func (*DeleteObjectResponse) ProtoMessage()    {}
-func (*DeleteObjectResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{11}
-}
-func (m *DeleteObjectResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *DeleteObjectResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DeleteObjectResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *DeleteObjectResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteObjectResponse.Merge(m, src)
-}
-func (m *DeleteObjectResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *DeleteObjectResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_DeleteObjectResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DeleteObjectResponse proto.InternalMessageInfo
-
 type ReadObjectRequest struct {
 	Bucket               string   `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Object               string   `protobuf:"bytes,2,opt,name=object,proto3" json:"object,omitempty"`
@@ -605,7 +536,7 @@ func (m *ReadObjectRequest) Reset()         { *m = ReadObjectRequest{} }
 func (m *ReadObjectRequest) String() string { return proto.CompactTextString(m) }
 func (*ReadObjectRequest) ProtoMessage()    {}
 func (*ReadObjectRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{12}
+	return fileDescriptor_aedf378765df4bae, []int{10}
 }
 func (m *ReadObjectRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -673,7 +604,7 @@ func (m *ReadObjectResponse) Reset()         { *m = ReadObjectResponse{} }
 func (m *ReadObjectResponse) String() string { return proto.CompactTextString(m) }
 func (*ReadObjectResponse) ProtoMessage()    {}
 func (*ReadObjectResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aedf378765df4bae, []int{13}
+	return fileDescriptor_aedf378765df4bae, []int{11}
 }
 func (m *ReadObjectResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -709,61 +640,477 @@ func (m *ReadObjectResponse) GetContent() []byte {
 	return nil
 }
 
+type DeleteObjectRequest struct {
+	Bucket               string   `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	Object               string   `protobuf:"bytes,2,opt,name=object,proto3" json:"object,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteObjectRequest) Reset()         { *m = DeleteObjectRequest{} }
+func (m *DeleteObjectRequest) String() string { return proto.CompactTextString(m) }
+func (*DeleteObjectRequest) ProtoMessage()    {}
+func (*DeleteObjectRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{12}
+}
+func (m *DeleteObjectRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteObjectRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteObjectRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteObjectRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteObjectRequest.Merge(m, src)
+}
+func (m *DeleteObjectRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteObjectRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteObjectRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteObjectRequest proto.InternalMessageInfo
+
+func (m *DeleteObjectRequest) GetBucket() string {
+	if m != nil {
+		return m.Bucket
+	}
+	return ""
+}
+
+func (m *DeleteObjectRequest) GetObject() string {
+	if m != nil {
+		return m.Object
+	}
+	return ""
+}
+
+type DeleteObjectResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteObjectResponse) Reset()         { *m = DeleteObjectResponse{} }
+func (m *DeleteObjectResponse) String() string { return proto.CompactTextString(m) }
+func (*DeleteObjectResponse) ProtoMessage()    {}
+func (*DeleteObjectResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{13}
+}
+func (m *DeleteObjectResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeleteObjectResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeleteObjectResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeleteObjectResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteObjectResponse.Merge(m, src)
+}
+func (m *DeleteObjectResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeleteObjectResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteObjectResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteObjectResponse proto.InternalMessageInfo
+
+type HeartbeatRequest struct {
+	ServerId             uint32   `protobuf:"varint,1,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
+	BeatSeq              uint64   `protobuf:"varint,2,opt,name=beat_seq,json=beatSeq,proto3" json:"beat_seq,omitempty"`
+	LastBeatSeq          uint64   `protobuf:"varint,3,opt,name=last_beat_seq,json=lastBeatSeq,proto3" json:"last_beat_seq,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *HeartbeatRequest) Reset()         { *m = HeartbeatRequest{} }
+func (m *HeartbeatRequest) String() string { return proto.CompactTextString(m) }
+func (*HeartbeatRequest) ProtoMessage()    {}
+func (*HeartbeatRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{14}
+}
+func (m *HeartbeatRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HeartbeatRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HeartbeatRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *HeartbeatRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HeartbeatRequest.Merge(m, src)
+}
+func (m *HeartbeatRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *HeartbeatRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_HeartbeatRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HeartbeatRequest proto.InternalMessageInfo
+
+func (m *HeartbeatRequest) GetServerId() uint32 {
+	if m != nil {
+		return m.ServerId
+	}
+	return 0
+}
+
+func (m *HeartbeatRequest) GetBeatSeq() uint64 {
+	if m != nil {
+		return m.BeatSeq
+	}
+	return 0
+}
+
+func (m *HeartbeatRequest) GetLastBeatSeq() uint64 {
+	if m != nil {
+		return m.LastBeatSeq
+	}
+	return 0
+}
+
+type HeartbeatResponse struct {
+	BeatSeq              uint64   `protobuf:"varint,1,opt,name=beat_seq,json=beatSeq,proto3" json:"beat_seq,omitempty"`
+	Status               *Status  `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *HeartbeatResponse) Reset()         { *m = HeartbeatResponse{} }
+func (m *HeartbeatResponse) String() string { return proto.CompactTextString(m) }
+func (*HeartbeatResponse) ProtoMessage()    {}
+func (*HeartbeatResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{15}
+}
+func (m *HeartbeatResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HeartbeatResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HeartbeatResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *HeartbeatResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HeartbeatResponse.Merge(m, src)
+}
+func (m *HeartbeatResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *HeartbeatResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_HeartbeatResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HeartbeatResponse proto.InternalMessageInfo
+
+func (m *HeartbeatResponse) GetBeatSeq() uint64 {
+	if m != nil {
+		return m.BeatSeq
+	}
+	return 0
+}
+
+func (m *HeartbeatResponse) GetStatus() *Status {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+type Status struct {
+	ObjectEvent          *ObjectEvent `protobuf:"bytes,1,opt,name=object_event,json=objectEvent,proto3" json:"object_event,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
+}
+
+func (m *Status) Reset()         { *m = Status{} }
+func (m *Status) String() string { return proto.CompactTextString(m) }
+func (*Status) ProtoMessage()    {}
+func (*Status) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{16}
+}
+func (m *Status) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Status) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Status.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Status) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Status.Merge(m, src)
+}
+func (m *Status) XXX_Size() int {
+	return m.Size()
+}
+func (m *Status) XXX_DiscardUnknown() {
+	xxx_messageInfo_Status.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Status proto.InternalMessageInfo
+
+func (m *Status) GetObjectEvent() *ObjectEvent {
+	if m != nil {
+		return m.ObjectEvent
+	}
+	return nil
+}
+
+type ObjectEvent struct {
+	Typ                  ObjectEvent_EventType `protobuf:"varint,1,opt,name=typ,proto3,enum=engula.storage.v1.ObjectEvent_EventType" json:"typ,omitempty"`
+	BucketAdded          []string              `protobuf:"bytes,2,rep,name=bucket_added,json=bucketAdded,proto3" json:"bucket_added,omitempty"`
+	BucketDelete         []string              `protobuf:"bytes,3,rep,name=bucket_delete,json=bucketDelete,proto3" json:"bucket_delete,omitempty"`
+	ObjectAdded          []*BucketObject       `protobuf:"bytes,4,rep,name=object_added,json=objectAdded,proto3" json:"object_added,omitempty"`
+	ObjectDelete         []*BucketObject       `protobuf:"bytes,5,rep,name=object_delete,json=objectDelete,proto3" json:"object_delete,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *ObjectEvent) Reset()         { *m = ObjectEvent{} }
+func (m *ObjectEvent) String() string { return proto.CompactTextString(m) }
+func (*ObjectEvent) ProtoMessage()    {}
+func (*ObjectEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{17}
+}
+func (m *ObjectEvent) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ObjectEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ObjectEvent.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ObjectEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ObjectEvent.Merge(m, src)
+}
+func (m *ObjectEvent) XXX_Size() int {
+	return m.Size()
+}
+func (m *ObjectEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_ObjectEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ObjectEvent proto.InternalMessageInfo
+
+func (m *ObjectEvent) GetTyp() ObjectEvent_EventType {
+	if m != nil {
+		return m.Typ
+	}
+	return ObjectEvent_Full
+}
+
+func (m *ObjectEvent) GetBucketAdded() []string {
+	if m != nil {
+		return m.BucketAdded
+	}
+	return nil
+}
+
+func (m *ObjectEvent) GetBucketDelete() []string {
+	if m != nil {
+		return m.BucketDelete
+	}
+	return nil
+}
+
+func (m *ObjectEvent) GetObjectAdded() []*BucketObject {
+	if m != nil {
+		return m.ObjectAdded
+	}
+	return nil
+}
+
+func (m *ObjectEvent) GetObjectDelete() []*BucketObject {
+	if m != nil {
+		return m.ObjectDelete
+	}
+	return nil
+}
+
+type BucketObject struct {
+	Bucket               string   `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	Object               string   `protobuf:"bytes,2,opt,name=object,proto3" json:"object,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *BucketObject) Reset()         { *m = BucketObject{} }
+func (m *BucketObject) String() string { return proto.CompactTextString(m) }
+func (*BucketObject) ProtoMessage()    {}
+func (*BucketObject) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aedf378765df4bae, []int{18}
+}
+func (m *BucketObject) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *BucketObject) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_BucketObject.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *BucketObject) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BucketObject.Merge(m, src)
+}
+func (m *BucketObject) XXX_Size() int {
+	return m.Size()
+}
+func (m *BucketObject) XXX_DiscardUnknown() {
+	xxx_messageInfo_BucketObject.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BucketObject proto.InternalMessageInfo
+
+func (m *BucketObject) GetBucket() string {
+	if m != nil {
+		return m.Bucket
+	}
+	return ""
+}
+
+func (m *BucketObject) GetObject() string {
+	if m != nil {
+		return m.Object
+	}
+	return ""
+}
+
 func init() {
+	proto.RegisterEnum("engula.storage.v1.ObjectEvent_EventType", ObjectEvent_EventType_name, ObjectEvent_EventType_value)
 	proto.RegisterType((*CreateBucketRequest)(nil), "engula.storage.v1.CreateBucketRequest")
 	proto.RegisterType((*CreateBucketResponse)(nil), "engula.storage.v1.CreateBucketResponse")
 	proto.RegisterType((*DeleteBucketRequest)(nil), "engula.storage.v1.DeleteBucketRequest")
 	proto.RegisterType((*DeleteBucketResponse)(nil), "engula.storage.v1.DeleteBucketResponse")
-	proto.RegisterType((*UploadObjectRequest)(nil), "engula.storage.v1.UploadObjectRequest")
 	proto.RegisterType((*ListBucketsRequest)(nil), "engula.storage.v1.ListBucketsRequest")
 	proto.RegisterType((*ListBucketsResponse)(nil), "engula.storage.v1.ListBucketsResponse")
 	proto.RegisterType((*ListObjectsRequest)(nil), "engula.storage.v1.ListObjectsRequest")
 	proto.RegisterType((*ListObjectsResponse)(nil), "engula.storage.v1.ListObjectsResponse")
+	proto.RegisterType((*UploadObjectRequest)(nil), "engula.storage.v1.UploadObjectRequest")
 	proto.RegisterType((*UploadObjectResponse)(nil), "engula.storage.v1.UploadObjectResponse")
-	proto.RegisterType((*DeleteObjectRequest)(nil), "engula.storage.v1.DeleteObjectRequest")
-	proto.RegisterType((*DeleteObjectResponse)(nil), "engula.storage.v1.DeleteObjectResponse")
 	proto.RegisterType((*ReadObjectRequest)(nil), "engula.storage.v1.ReadObjectRequest")
 	proto.RegisterType((*ReadObjectResponse)(nil), "engula.storage.v1.ReadObjectResponse")
+	proto.RegisterType((*DeleteObjectRequest)(nil), "engula.storage.v1.DeleteObjectRequest")
+	proto.RegisterType((*DeleteObjectResponse)(nil), "engula.storage.v1.DeleteObjectResponse")
+	proto.RegisterType((*HeartbeatRequest)(nil), "engula.storage.v1.HeartbeatRequest")
+	proto.RegisterType((*HeartbeatResponse)(nil), "engula.storage.v1.HeartbeatResponse")
+	proto.RegisterType((*Status)(nil), "engula.storage.v1.Status")
+	proto.RegisterType((*ObjectEvent)(nil), "engula.storage.v1.ObjectEvent")
+	proto.RegisterType((*BucketObject)(nil), "engula.storage.v1.BucketObject")
 }
 
 func init() { proto.RegisterFile("proto/server/server.proto", fileDescriptor_aedf378765df4bae) }
 
 var fileDescriptor_aedf378765df4bae = []byte{
-	// 530 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x55, 0xc1, 0x6e, 0xd3, 0x40,
-	0x10, 0xf5, 0x36, 0xa4, 0xd0, 0x21, 0x01, 0xba, 0x89, 0x2a, 0x93, 0x43, 0x14, 0x19, 0xda, 0xfa,
-	0x40, 0x6c, 0x51, 0x3e, 0x00, 0xa9, 0x85, 0x1b, 0x12, 0x92, 0x11, 0x17, 0x90, 0x40, 0x8e, 0x3b,
-	0x72, 0x0c, 0xc6, 0x6b, 0xbc, 0x9b, 0xfc, 0x09, 0x12, 0x3f, 0xc1, 0x8d, 0x8f, 0xe0, 0xc8, 0x27,
-	0xa0, 0xf0, 0x23, 0x68, 0xbd, 0xeb, 0xc6, 0x4e, 0xb6, 0xb5, 0x50, 0x4e, 0xd9, 0x79, 0x9a, 0x7d,
-	0xb3, 0x33, 0xef, 0x4d, 0x0c, 0x0f, 0xf3, 0x82, 0x09, 0xe6, 0x73, 0x2c, 0x96, 0x58, 0xe8, 0x1f,
-	0xaf, 0xc4, 0xe8, 0x21, 0x66, 0xf1, 0x22, 0x0d, 0x3d, 0x2e, 0x58, 0x11, 0xc6, 0xe8, 0x2d, 0x9f,
-	0x8e, 0x86, 0x31, 0x8b, 0x99, 0xba, 0x21, 0x4f, 0x2a, 0xd1, 0x99, 0xc2, 0xe0, 0xa2, 0xc0, 0x50,
-	0xe0, 0xf9, 0x22, 0xfa, 0x8c, 0x22, 0xc0, 0xaf, 0x0b, 0xe4, 0x82, 0x1e, 0xc1, 0xfe, 0xac, 0x04,
-	0x6c, 0x32, 0x21, 0xee, 0x41, 0xa0, 0x23, 0xe7, 0x08, 0x86, 0xcd, 0x74, 0x9e, 0xb3, 0x8c, 0xa3,
-	0xa4, 0x79, 0x81, 0x29, 0xfe, 0x07, 0x4d, 0x33, 0x5d, 0xd3, 0xfc, 0x20, 0x30, 0x78, 0x9b, 0xa7,
-	0x2c, 0xbc, 0x7c, 0x3d, 0xfb, 0x84, 0x51, 0x1b, 0x8f, 0xc4, 0x59, 0x99, 0x68, 0xef, 0x29, 0x5c,
-	0x45, 0xd4, 0x86, 0xdb, 0x11, 0xcb, 0x04, 0x66, 0xc2, 0xee, 0x4c, 0x88, 0xdb, 0x0b, 0xaa, 0x90,
-	0x9e, 0xc2, 0xfd, 0x02, 0xf3, 0x34, 0x89, 0xc2, 0x8f, 0x85, 0x22, 0xb7, 0x6f, 0x4d, 0x88, 0x7b,
-	0x27, 0xb8, 0xa7, 0xe1, 0xaa, 0xe4, 0x23, 0xe8, 0x57, 0x89, 0xd1, 0x3c, 0x4c, 0x32, 0xbb, 0x3b,
-	0xe9, 0xb8, 0x07, 0x41, 0x4f, 0x83, 0x17, 0x12, 0x73, 0x86, 0x40, 0x5f, 0x25, 0x5c, 0xa8, 0x2e,
-	0xb8, 0xbe, 0xea, 0xf8, 0x30, 0x68, 0xa0, 0xaa, 0x39, 0xf9, 0x28, 0xf5, 0x6c, 0x6e, 0x93, 0x92,
-	0xab, 0x0a, 0x9d, 0x27, 0x8a, 0x46, 0xf5, 0xcc, 0xdb, 0x86, 0xa7, 0xe9, 0xaf, 0xb2, 0xd7, 0xf4,
-	0xaa, 0xfb, 0x2b, 0x7a, 0x1d, 0xca, 0x69, 0x37, 0x87, 0xaa, 0xa7, 0xfd, 0xb2, 0x12, 0x6d, 0xa7,
-	0x61, 0xaf, 0xc5, 0xdc, 0xa0, 0x8f, 0xe1, 0x30, 0xc0, 0x5d, 0x95, 0x7c, 0x00, 0x9d, 0x9c, 0xf1,
-	0x52, 0xc5, 0x6e, 0x20, 0x8f, 0x12, 0x49, 0x31, 0x2b, 0x55, 0xeb, 0x06, 0xf2, 0xe8, 0x78, 0x40,
-	0xeb, 0x85, 0xd6, 0xf3, 0xa8, 0x3c, 0x40, 0x1a, 0x1e, 0x38, 0xfb, 0xd6, 0x81, 0xbe, 0x12, 0xe7,
-	0x0d, 0x16, 0xcb, 0x24, 0x42, 0x1a, 0x42, 0xaf, 0x6e, 0x6b, 0x7a, 0xe2, 0x6d, 0xed, 0x8f, 0x67,
-	0x58, 0x93, 0xd1, 0x69, 0x6b, 0x9e, 0x9e, 0x85, 0x25, 0x4b, 0xd4, 0x2d, 0x6f, 0x2c, 0x61, 0x58,
-	0x21, 0x63, 0x09, 0xe3, 0xee, 0x58, 0xf4, 0x03, 0xdc, 0xad, 0xf9, 0x8e, 0x1e, 0x1b, 0x6e, 0x6e,
-	0xbb, 0x75, 0x74, 0xd2, 0x96, 0xb6, 0xc9, 0xaf, 0x8d, 0x77, 0x2d, 0x7f, 0xd3, 0xc6, 0xd7, 0xf2,
-	0x6f, 0xf8, 0xd7, 0xb1, 0xce, 0x7e, 0xee, 0x41, 0x5f, 0xa1, 0x95, 0x2e, 0x11, 0xf4, 0xea, 0xce,
-	0x35, 0x0e, 0xcd, 0xf0, 0x7f, 0x61, 0x1c, 0x9a, 0x71, 0x05, 0x2c, 0x97, 0xd0, 0xf7, 0x00, 0x6b,
-	0xfb, 0xd0, 0xc7, 0x86, 0xab, 0x5b, 0x36, 0x1e, 0x1d, 0xb7, 0x64, 0x6d, 0xcb, 0x7e, 0x43, 0x07,
-	0x86, 0x25, 0xbc, 0x41, 0xf6, 0xcd, 0x12, 0xe7, 0xcf, 0x7f, 0xad, 0xc6, 0xe4, 0xf7, 0x6a, 0x4c,
-	0xfe, 0xac, 0xc6, 0xe4, 0xfb, 0xdf, 0xb1, 0xf5, 0x6e, 0x1a, 0x27, 0x62, 0xbe, 0x98, 0x79, 0x11,
-	0xfb, 0xe2, 0x2b, 0x1a, 0x9f, 0xcf, 0xc3, 0x02, 0x2f, 0xa7, 0x9a, 0xcd, 0xaf, 0x7f, 0x39, 0x66,
-	0xfb, 0x65, 0xf4, 0xec, 0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x40, 0x9c, 0x34, 0xd5, 0x50, 0x06,
-	0x00, 0x00,
+	// 814 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0xcd, 0x6e, 0xda, 0x4c,
+	0x14, 0xc5, 0x18, 0x08, 0x5c, 0x43, 0x3e, 0x32, 0x89, 0x22, 0x87, 0x4f, 0xa2, 0xd4, 0xf9, 0x63,
+	0xd1, 0x18, 0x85, 0xee, 0xba, 0x68, 0x15, 0x92, 0x54, 0x8d, 0x5a, 0xb5, 0x92, 0xd3, 0x76, 0xd1,
+	0x4a, 0x45, 0xc6, 0x1e, 0x01, 0xa9, 0x63, 0x13, 0xdb, 0x20, 0xe5, 0x41, 0x2a, 0xf5, 0x25, 0xba,
+	0xeb, 0x0b, 0x74, 0xd7, 0x65, 0x1f, 0xa1, 0x4a, 0x5f, 0xa4, 0x1a, 0xdf, 0x31, 0x18, 0x98, 0x40,
+	0xa3, 0x6c, 0x12, 0xdf, 0xe3, 0x33, 0xe7, 0xfe, 0xcc, 0xf8, 0x0c, 0xb0, 0x35, 0xf0, 0xbd, 0xd0,
+	0x6b, 0x04, 0xd4, 0x1f, 0x51, 0x9f, 0xff, 0xd3, 0x23, 0x8c, 0xac, 0x51, 0xb7, 0x3b, 0x74, 0x4c,
+	0x3d, 0x08, 0x3d, 0xdf, 0xec, 0x52, 0x7d, 0x74, 0x58, 0xd9, 0xe8, 0x7a, 0x5d, 0x0f, 0x57, 0xb0,
+	0x27, 0x24, 0x6a, 0x07, 0xb0, 0x7e, 0xec, 0x53, 0x33, 0xa4, 0xad, 0xa1, 0xf5, 0x99, 0x86, 0x06,
+	0xbd, 0x1a, 0xd2, 0x20, 0x24, 0x9b, 0x90, 0xeb, 0x44, 0x80, 0x2a, 0xd5, 0xa4, 0x7a, 0xc1, 0xe0,
+	0x91, 0xb6, 0x09, 0x1b, 0xd3, 0xf4, 0x60, 0xe0, 0xb9, 0x01, 0x65, 0x32, 0x27, 0xd4, 0xa1, 0x77,
+	0x90, 0x99, 0xa6, 0x73, 0x99, 0x0d, 0x20, 0xaf, 0xfa, 0x41, 0x88, 0x68, 0xc0, 0x55, 0xb4, 0x06,
+	0xac, 0x4f, 0xa1, 0x48, 0x26, 0x2a, 0xac, 0xa0, 0x5c, 0xa0, 0x4a, 0x35, 0xb9, 0x5e, 0x30, 0xe2,
+	0x50, 0x7b, 0x84, 0x32, 0x6f, 0x3a, 0x17, 0xd4, 0x1a, 0xcb, 0xdc, 0x5a, 0x0c, 0x97, 0x1f, 0xb3,
+	0x27, 0xf2, 0x1e, 0x42, 0xb1, 0x3c, 0x0f, 0xb5, 0x6f, 0x12, 0xac, 0xbf, 0x1b, 0x38, 0x9e, 0x69,
+	0xe3, 0x9a, 0x25, 0x09, 0x18, 0x8e, 0x4b, 0xd5, 0x34, 0xe2, 0x18, 0xb1, 0x0c, 0x96, 0xe7, 0x86,
+	0xd4, 0x0d, 0x55, 0xb9, 0x26, 0xd5, 0x8b, 0x46, 0x1c, 0x92, 0x7d, 0xf8, 0xcf, 0xa7, 0x03, 0xa7,
+	0x6f, 0x99, 0x6d, 0x1f, 0xc5, 0xd5, 0x4c, 0x4d, 0xaa, 0xe7, 0x8d, 0x55, 0x0e, 0xc7, 0x29, 0xb7,
+	0xa1, 0x14, 0x13, 0xad, 0x9e, 0xd9, 0x77, 0xd5, 0x6c, 0x54, 0x6a, 0x91, 0x83, 0xc7, 0x0c, 0x63,
+	0xd3, 0x9e, 0x2e, 0x97, 0x4f, 0xbb, 0x0b, 0x6b, 0x06, 0xbd, 0x6f, 0x13, 0x65, 0x90, 0x07, 0x5e,
+	0x10, 0x35, 0x90, 0x35, 0xd8, 0x23, 0x43, 0x1c, 0xea, 0x46, 0x05, 0x67, 0x0d, 0xf6, 0xa8, 0xe9,
+	0x40, 0x92, 0x89, 0x26, 0x03, 0x8e, 0xdb, 0x97, 0xa6, 0xda, 0xd7, 0x4e, 0xe3, 0xd3, 0x74, 0xaf,
+	0xd2, 0x26, 0xa7, 0x6c, 0xa6, 0x6f, 0x17, 0xca, 0x2f, 0xa8, 0xe9, 0x87, 0x1d, 0x6a, 0x8e, 0xb5,
+	0xff, 0x87, 0x02, 0x7e, 0x40, 0xed, 0xbe, 0x1d, 0xc9, 0x97, 0x8c, 0x3c, 0x02, 0x67, 0x36, 0xd9,
+	0x82, 0x3c, 0xe3, 0xb6, 0x03, 0x7a, 0x15, 0xa5, 0xc8, 0x18, 0x2b, 0x2c, 0x3e, 0xa7, 0x57, 0x44,
+	0x83, 0x92, 0x63, 0x06, 0x61, 0x7b, 0xfc, 0x5e, 0x8e, 0xde, 0x2b, 0x0c, 0x6c, 0x21, 0x47, 0x33,
+	0x61, 0x2d, 0x91, 0x8f, 0x77, 0x9f, 0xd4, 0x94, 0xa6, 0x35, 0x0f, 0x21, 0x17, 0x84, 0x66, 0x38,
+	0x0c, 0xa2, 0x64, 0x4a, 0x73, 0x4b, 0x9f, 0xfb, 0x9a, 0xf5, 0xf3, 0x88, 0x60, 0x70, 0xa2, 0xf6,
+	0x12, 0x72, 0x88, 0x90, 0x23, 0x28, 0x62, 0xfb, 0x6d, 0x3a, 0x8a, 0x47, 0xab, 0x34, 0xab, 0x02,
+	0x09, 0x9c, 0xca, 0x29, 0x63, 0x19, 0x8a, 0x37, 0x09, 0xb4, 0x1f, 0x69, 0x50, 0x12, 0x2f, 0xc9,
+	0x13, 0x90, 0xc3, 0xeb, 0x41, 0xa4, 0xb4, 0xda, 0xac, 0x2f, 0x56, 0xd2, 0xa3, 0xbf, 0x6f, 0xaf,
+	0x07, 0xd4, 0x60, 0x8b, 0xc8, 0x43, 0x28, 0xe2, 0x2e, 0xb5, 0x4d, 0xdb, 0xa6, 0xb6, 0x9a, 0x8e,
+	0xce, 0xa7, 0x82, 0xd8, 0x11, 0x83, 0xd8, 0x19, 0xe6, 0x14, 0x3b, 0xda, 0x2d, 0x55, 0xc6, 0x33,
+	0x8c, 0x20, 0xee, 0x20, 0x69, 0x8d, 0xdb, 0x42, 0x9d, 0x4c, 0x4d, 0xae, 0x2b, 0xcd, 0x07, 0x82,
+	0x62, 0xd0, 0x26, 0xf8, 0x96, 0xf3, 0xbe, 0x30, 0xd1, 0x09, 0x94, 0xb8, 0x06, 0x4f, 0x94, 0xfd,
+	0x37, 0x11, 0x9e, 0x19, 0x2b, 0xd1, 0x76, 0xa0, 0x30, 0xee, 0x91, 0xe4, 0x21, 0xf3, 0x7c, 0xe8,
+	0x38, 0xe5, 0x14, 0x29, 0x41, 0xe1, 0xcc, 0xb5, 0x7c, 0x7a, 0x49, 0xdd, 0xb0, 0x2c, 0x69, 0x4f,
+	0xa1, 0x98, 0xd4, 0xb8, 0xeb, 0xd9, 0x6d, 0x7e, 0x91, 0xa1, 0x84, 0x02, 0xe7, 0xd4, 0x1f, 0xf5,
+	0x2d, 0x4a, 0x4c, 0x28, 0x26, 0xad, 0x97, 0xec, 0x09, 0xca, 0x16, 0x58, 0x79, 0x65, 0x7f, 0x29,
+	0x8f, 0x7f, 0x16, 0x29, 0x96, 0x22, 0x69, 0xcb, 0xc2, 0x14, 0x02, 0x9b, 0x17, 0xa6, 0x10, 0xfa,
+	0x7b, 0x8a, 0x7c, 0x02, 0x25, 0xe1, 0xe5, 0x64, 0x57, 0xb0, 0x72, 0xfe, 0x06, 0xa8, 0xec, 0x2d,
+	0xa3, 0xcd, 0xea, 0x73, 0x33, 0xbf, 0x55, 0x7f, 0xfa, 0x6a, 0xb8, 0x55, 0x7f, 0xe6, 0x4e, 0xd0,
+	0x52, 0xcd, 0xef, 0x69, 0x28, 0x21, 0x1a, 0xef, 0x8b, 0x05, 0xc5, 0xa4, 0xbb, 0x0a, 0x87, 0x26,
+	0xb8, 0x2d, 0x84, 0x43, 0x13, 0xda, 0x74, 0xaa, 0x2e, 0x91, 0x8f, 0x00, 0x13, 0x07, 0x25, 0x3b,
+	0x82, 0xa5, 0x73, 0x4e, 0x5e, 0xd9, 0x5d, 0xc2, 0x9a, 0xdf, 0xf6, 0x05, 0x1d, 0x08, 0xfc, 0x78,
+	0xc1, 0xb6, 0xcf, 0xa6, 0x68, 0x5e, 0x40, 0xf9, 0xd8, 0xb4, 0x7a, 0xf4, 0xb5, 0x67, 0xd3, 0x78,
+	0x70, 0xef, 0xa1, 0x30, 0xb6, 0x45, 0xb2, 0x2d, 0xd0, 0x9a, 0x35, 0xe9, 0xca, 0xce, 0x62, 0x12,
+	0x66, 0x6b, 0x3d, 0xfb, 0x79, 0x53, 0x95, 0x7e, 0xdd, 0x54, 0xa5, 0xdf, 0x37, 0x55, 0xe9, 0xeb,
+	0x9f, 0x6a, 0xea, 0xc3, 0x41, 0xb7, 0x1f, 0xf6, 0x86, 0x1d, 0xdd, 0xf2, 0x2e, 0x1b, 0xa8, 0xd0,
+	0x08, 0x7a, 0xa6, 0x4f, 0xed, 0x03, 0x2e, 0xd4, 0x48, 0xfe, 0x92, 0xea, 0xe4, 0xa2, 0xe8, 0xf1,
+	0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb7, 0xda, 0x60, 0xeb, 0x60, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1133,6 +1480,78 @@ var _ObjectService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "proto/server/server.proto",
 }
 
+// CacheNodeServiceClient is the client API for CacheNodeService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type CacheNodeServiceClient interface {
+	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*HeartbeatResponse, error)
+}
+
+type cacheNodeServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewCacheNodeServiceClient(cc *grpc.ClientConn) CacheNodeServiceClient {
+	return &cacheNodeServiceClient{cc}
+}
+
+func (c *cacheNodeServiceClient) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*HeartbeatResponse, error) {
+	out := new(HeartbeatResponse)
+	err := c.cc.Invoke(ctx, "/engula.storage.v1.CacheNodeService/Heartbeat", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CacheNodeServiceServer is the server API for CacheNodeService service.
+type CacheNodeServiceServer interface {
+	Heartbeat(context.Context, *HeartbeatRequest) (*HeartbeatResponse, error)
+}
+
+// UnimplementedCacheNodeServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedCacheNodeServiceServer struct {
+}
+
+func (*UnimplementedCacheNodeServiceServer) Heartbeat(ctx context.Context, req *HeartbeatRequest) (*HeartbeatResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
+}
+
+func RegisterCacheNodeServiceServer(s *grpc.Server, srv CacheNodeServiceServer) {
+	s.RegisterService(&_CacheNodeService_serviceDesc, srv)
+}
+
+func _CacheNodeService_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HeartbeatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CacheNodeServiceServer).Heartbeat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/engula.storage.v1.CacheNodeService/Heartbeat",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CacheNodeServiceServer).Heartbeat(ctx, req.(*HeartbeatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _CacheNodeService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "engula.storage.v1.CacheNodeService",
+	HandlerType: (*CacheNodeServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Heartbeat",
+			Handler:    _CacheNodeService_Heartbeat_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/server/server.proto",
+}
+
 func (m *CreateBucketRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1251,73 +1670,6 @@ func (m *DeleteBucketResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.XXX_unrecognized != nil {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *UploadObjectRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *UploadObjectRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UploadObjectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.ReplicaChain) > 0 {
-		for iNdEx := len(m.ReplicaChain) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.ReplicaChain[iNdEx])
-			copy(dAtA[i:], m.ReplicaChain[iNdEx])
-			i = encodeVarintServer(dAtA, i, uint64(len(m.ReplicaChain[iNdEx])))
-			i--
-			dAtA[i] = 0x2a
-		}
-	}
-	if m.ReplicaRequest {
-		i--
-		if m.ReplicaRequest {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.Content) > 0 {
-		i -= len(m.Content)
-		copy(dAtA[i:], m.Content)
-		i = encodeVarintServer(dAtA, i, uint64(len(m.Content)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.Object) > 0 {
-		i -= len(m.Object)
-		copy(dAtA[i:], m.Object)
-		i = encodeVarintServer(dAtA, i, uint64(len(m.Object)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Bucket) > 0 {
-		i -= len(m.Bucket)
-		copy(dAtA[i:], m.Bucket)
-		i = encodeVarintServer(dAtA, i, uint64(len(m.Bucket)))
-		i--
-		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1455,7 +1807,7 @@ func (m *ListObjectsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *UploadObjectResponse) Marshal() (dAtA []byte, err error) {
+func (m *UploadObjectRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1465,12 +1817,12 @@ func (m *UploadObjectResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *UploadObjectResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *UploadObjectRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *UploadObjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *UploadObjectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1479,32 +1831,31 @@ func (m *UploadObjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	return len(dAtA) - i, nil
-}
-
-func (m *DeleteObjectRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
+	if len(m.ReplicaChain) > 0 {
+		for iNdEx := len(m.ReplicaChain) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ReplicaChain[iNdEx])
+			copy(dAtA[i:], m.ReplicaChain[iNdEx])
+			i = encodeVarintServer(dAtA, i, uint64(len(m.ReplicaChain[iNdEx])))
+			i--
+			dAtA[i] = 0x2a
+		}
 	}
-	return dAtA[:n], nil
-}
-
-func (m *DeleteObjectRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DeleteObjectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	if m.ReplicaRequest {
+		i--
+		if m.ReplicaRequest {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Content) > 0 {
+		i -= len(m.Content)
+		copy(dAtA[i:], m.Content)
+		i = encodeVarintServer(dAtA, i, uint64(len(m.Content)))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.Object) > 0 {
 		i -= len(m.Object)
@@ -1523,7 +1874,7 @@ func (m *DeleteObjectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *DeleteObjectResponse) Marshal() (dAtA []byte, err error) {
+func (m *UploadObjectResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1533,12 +1884,12 @@ func (m *DeleteObjectResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *DeleteObjectResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *UploadObjectResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *DeleteObjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *UploadObjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1635,6 +1986,318 @@ func (m *ReadObjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *DeleteObjectRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteObjectRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteObjectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Object) > 0 {
+		i -= len(m.Object)
+		copy(dAtA[i:], m.Object)
+		i = encodeVarintServer(dAtA, i, uint64(len(m.Object)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Bucket) > 0 {
+		i -= len(m.Bucket)
+		copy(dAtA[i:], m.Bucket)
+		i = encodeVarintServer(dAtA, i, uint64(len(m.Bucket)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteObjectResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteObjectResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteObjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *HeartbeatRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HeartbeatRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HeartbeatRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.LastBeatSeq != 0 {
+		i = encodeVarintServer(dAtA, i, uint64(m.LastBeatSeq))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.BeatSeq != 0 {
+		i = encodeVarintServer(dAtA, i, uint64(m.BeatSeq))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.ServerId != 0 {
+		i = encodeVarintServer(dAtA, i, uint64(m.ServerId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *HeartbeatResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HeartbeatResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HeartbeatResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Status != nil {
+		{
+			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintServer(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.BeatSeq != 0 {
+		i = encodeVarintServer(dAtA, i, uint64(m.BeatSeq))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Status) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Status) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Status) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.ObjectEvent != nil {
+		{
+			size, err := m.ObjectEvent.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintServer(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ObjectEvent) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ObjectEvent) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ObjectEvent) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.ObjectDelete) > 0 {
+		for iNdEx := len(m.ObjectDelete) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ObjectDelete[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintServer(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.ObjectAdded) > 0 {
+		for iNdEx := len(m.ObjectAdded) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ObjectAdded[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintServer(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.BucketDelete) > 0 {
+		for iNdEx := len(m.BucketDelete) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.BucketDelete[iNdEx])
+			copy(dAtA[i:], m.BucketDelete[iNdEx])
+			i = encodeVarintServer(dAtA, i, uint64(len(m.BucketDelete[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.BucketAdded) > 0 {
+		for iNdEx := len(m.BucketAdded) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.BucketAdded[iNdEx])
+			copy(dAtA[i:], m.BucketAdded[iNdEx])
+			i = encodeVarintServer(dAtA, i, uint64(len(m.BucketAdded[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.Typ != 0 {
+		i = encodeVarintServer(dAtA, i, uint64(m.Typ))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *BucketObject) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *BucketObject) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *BucketObject) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Object) > 0 {
+		i -= len(m.Object)
+		copy(dAtA[i:], m.Object)
+		i = encodeVarintServer(dAtA, i, uint64(len(m.Object)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Bucket) > 0 {
+		i -= len(m.Bucket)
+		copy(dAtA[i:], m.Bucket)
+		i = encodeVarintServer(dAtA, i, uint64(len(m.Bucket)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintServer(dAtA []byte, offset int, v uint64) int {
 	offset -= sovServer(v)
 	base := offset
@@ -1696,39 +2359,6 @@ func (m *DeleteBucketResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *UploadObjectRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Bucket)
-	if l > 0 {
-		n += 1 + l + sovServer(uint64(l))
-	}
-	l = len(m.Object)
-	if l > 0 {
-		n += 1 + l + sovServer(uint64(l))
-	}
-	l = len(m.Content)
-	if l > 0 {
-		n += 1 + l + sovServer(uint64(l))
-	}
-	if m.ReplicaRequest {
-		n += 2
-	}
-	if len(m.ReplicaChain) > 0 {
-		for _, s := range m.ReplicaChain {
-			l = len(s)
-			n += 1 + l + sovServer(uint64(l))
-		}
-	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -1799,19 +2429,7 @@ func (m *ListObjectsResponse) Size() (n int) {
 	return n
 }
 
-func (m *UploadObjectResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *DeleteObjectRequest) Size() (n int) {
+func (m *UploadObjectRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1825,13 +2443,26 @@ func (m *DeleteObjectRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovServer(uint64(l))
 	}
+	l = len(m.Content)
+	if l > 0 {
+		n += 1 + l + sovServer(uint64(l))
+	}
+	if m.ReplicaRequest {
+		n += 2
+	}
+	if len(m.ReplicaChain) > 0 {
+		for _, s := range m.ReplicaChain {
+			l = len(s)
+			n += 1 + l + sovServer(uint64(l))
+		}
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
 
-func (m *DeleteObjectResponse) Size() (n int) {
+func (m *UploadObjectResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1876,6 +2507,153 @@ func (m *ReadObjectResponse) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Content)
+	if l > 0 {
+		n += 1 + l + sovServer(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *DeleteObjectRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Bucket)
+	if l > 0 {
+		n += 1 + l + sovServer(uint64(l))
+	}
+	l = len(m.Object)
+	if l > 0 {
+		n += 1 + l + sovServer(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *DeleteObjectResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *HeartbeatRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ServerId != 0 {
+		n += 1 + sovServer(uint64(m.ServerId))
+	}
+	if m.BeatSeq != 0 {
+		n += 1 + sovServer(uint64(m.BeatSeq))
+	}
+	if m.LastBeatSeq != 0 {
+		n += 1 + sovServer(uint64(m.LastBeatSeq))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *HeartbeatResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.BeatSeq != 0 {
+		n += 1 + sovServer(uint64(m.BeatSeq))
+	}
+	if m.Status != nil {
+		l = m.Status.Size()
+		n += 1 + l + sovServer(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Status) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ObjectEvent != nil {
+		l = m.ObjectEvent.Size()
+		n += 1 + l + sovServer(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ObjectEvent) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Typ != 0 {
+		n += 1 + sovServer(uint64(m.Typ))
+	}
+	if len(m.BucketAdded) > 0 {
+		for _, s := range m.BucketAdded {
+			l = len(s)
+			n += 1 + l + sovServer(uint64(l))
+		}
+	}
+	if len(m.BucketDelete) > 0 {
+		for _, s := range m.BucketDelete {
+			l = len(s)
+			n += 1 + l + sovServer(uint64(l))
+		}
+	}
+	if len(m.ObjectAdded) > 0 {
+		for _, e := range m.ObjectAdded {
+			l = e.Size()
+			n += 1 + l + sovServer(uint64(l))
+		}
+	}
+	if len(m.ObjectDelete) > 0 {
+		for _, e := range m.ObjectDelete {
+			l = e.Size()
+			n += 1 + l + sovServer(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *BucketObject) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Bucket)
+	if l > 0 {
+		n += 1 + l + sovServer(uint64(l))
+	}
+	l = len(m.Object)
 	if l > 0 {
 		n += 1 + l + sovServer(uint64(l))
 	}
@@ -2137,207 +2915,6 @@ func (m *DeleteBucketResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: DeleteBucketResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipServer(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthServer
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *UploadObjectRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowServer
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: UploadObjectRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UploadObjectRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Bucket", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServer
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Bucket = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Object", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServer
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Object = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Content", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthServer
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Content = append(m.Content[:0], dAtA[iNdEx:postIndex]...)
-			if m.Content == nil {
-				m.Content = []byte{}
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ReplicaRequest", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.ReplicaRequest = bool(v != 0)
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ReplicaChain", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServer
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthServer
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ReplicaChain = append(m.ReplicaChain, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipServer(dAtA[iNdEx:])
@@ -2660,7 +3237,7 @@ func (m *ListObjectsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *UploadObjectResponse) Unmarshal(dAtA []byte) error {
+func (m *UploadObjectRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2683,61 +3260,10 @@ func (m *UploadObjectResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: UploadObjectResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: UploadObjectRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UploadObjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipServer(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthServer
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *DeleteObjectRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowServer
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DeleteObjectRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DeleteObjectRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: UploadObjectRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2804,6 +3330,92 @@ func (m *DeleteObjectRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.Object = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Content", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Content = append(m.Content[:0], dAtA[iNdEx:postIndex]...)
+			if m.Content == nil {
+				m.Content = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplicaRequest", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ReplicaRequest = bool(v != 0)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplicaChain", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ReplicaChain = append(m.ReplicaChain, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipServer(dAtA[iNdEx:])
@@ -2826,7 +3438,7 @@ func (m *DeleteObjectRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *DeleteObjectResponse) Unmarshal(dAtA []byte) error {
+func (m *UploadObjectResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2849,10 +3461,10 @@ func (m *DeleteObjectResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: DeleteObjectResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: UploadObjectResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DeleteObjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: UploadObjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -3092,6 +3704,790 @@ func (m *ReadObjectResponse) Unmarshal(dAtA []byte) error {
 			if m.Content == nil {
 				m.Content = []byte{}
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteObjectRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteObjectRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteObjectRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bucket", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Bucket = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Object", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Object = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteObjectResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteObjectResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteObjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HeartbeatRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HeartbeatRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HeartbeatRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ServerId", wireType)
+			}
+			m.ServerId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ServerId |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BeatSeq", wireType)
+			}
+			m.BeatSeq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BeatSeq |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastBeatSeq", wireType)
+			}
+			m.LastBeatSeq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastBeatSeq |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HeartbeatResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HeartbeatResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HeartbeatResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BeatSeq", wireType)
+			}
+			m.BeatSeq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BeatSeq |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Status == nil {
+				m.Status = &Status{}
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Status) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Status: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Status: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectEvent", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ObjectEvent == nil {
+				m.ObjectEvent = &ObjectEvent{}
+			}
+			if err := m.ObjectEvent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ObjectEvent) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ObjectEvent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ObjectEvent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Typ", wireType)
+			}
+			m.Typ = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Typ |= ObjectEvent_EventType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BucketAdded", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BucketAdded = append(m.BucketAdded, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BucketDelete", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BucketDelete = append(m.BucketDelete, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectAdded", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ObjectAdded = append(m.ObjectAdded, &BucketObject{})
+			if err := m.ObjectAdded[len(m.ObjectAdded)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectDelete", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ObjectDelete = append(m.ObjectDelete, &BucketObject{})
+			if err := m.ObjectDelete[len(m.ObjectDelete)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthServer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BucketObject) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BucketObject: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BucketObject: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bucket", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Bucket = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Object", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthServer
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Object = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -8,21 +8,26 @@ import (
 )
 
 var (
-	_ server.ObjectServiceServer = &Server{}
-	_ server.BucketServiceServer = &Server{}
+	_ server.ObjectServiceServer    = &Server{}
+	_ server.BucketServiceServer    = &Server{}
+	_ server.CacheNodeServiceServer = &Server{}
 )
 
 type Server struct {
+	id      uint32
 	base    storage.Storage
 	local   storage.Storage
 	replica storage.Storage
+	status  *Status
 }
 
-func NewServer(base, local, replica storage.Storage) *Server {
+func NewServer(serverId uint32, base, local, replica storage.Storage, status *Status) *Server {
 	return &Server{
+		id:      serverId,
 		base:    base,
 		local:   local,
 		replica: replica,
+		status:  status,
 	}
 }
 
@@ -30,6 +35,7 @@ func (s *Server) CreateBucket(ctx context.Context, req *server.CreateBucketReque
 	if err = s.local.CreateBucket(ctx, req.Bucket); err != nil {
 		return
 	}
+	s.status.AddBucket(ctx, req.Bucket)
 	resp = &server.CreateBucketResponse{}
 	return
 }
@@ -37,6 +43,7 @@ func (s *Server) DeleteBucket(ctx context.Context, req *server.DeleteBucketReque
 	if err = s.local.DeleteBucket(ctx, req.Bucket); err != nil {
 		return
 	}
+	s.status.DeleteBucket(ctx, req.Bucket)
 	resp = &server.DeleteBucketResponse{}
 	return
 }
@@ -53,6 +60,7 @@ func (s *Server) DeleteObject(ctx context.Context, req *server.DeleteObjectReque
 	if err = s.local.DeleteObject(ctx, req.Bucket, req.Object); err != nil {
 		return
 	}
+	s.status.DeleteObject(ctx, req.Bucket, req.Object)
 	resp = &server.DeleteObjectResponse{}
 	return
 }
@@ -106,6 +114,7 @@ func (s *Server) UploadObject(srv server.ObjectService_UploadObjectServer) (err 
 		}
 	}
 
+	s.status.AddObject(ctx, req.Bucket, req.Object)
 	srv.SendAndClose(&server.UploadObjectResponse{})
 	return
 }
@@ -117,5 +126,14 @@ func (s *Server) write(ctx context.Context, ws []storage.ObjectWriter, content [
 			return
 		}
 	}
+	return
+}
+
+func (s *Server) Heartbeat(ctx context.Context, req *server.HeartbeatRequest) (resp *server.HeartbeatResponse, err error) {
+	// TODO: check s.id == req.serverID
+	var ev server.ObjectEvent
+	ev, err = s.status.HeartbeatStatus(ctx, req.LastBeatSeq)
+	resp.BeatSeq = req.BeatSeq
+	resp.Status = &server.Status{ObjectEvent: &ev}
 	return
 }

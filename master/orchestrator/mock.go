@@ -7,10 +7,10 @@ var (
 )
 
 type Mock struct {
-	Nodes []string
+	Nodes []Node
 }
 
-func (m *Mock) ListCacheNode(ctx context.Context) (nodes []string, err error) {
+func (m *Mock) ListCacheNode(ctx context.Context) (nodes []Node, err error) {
 	nodes = m.Nodes
 	return
 }

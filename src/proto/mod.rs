@@ -12,23 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(type_alias_impl_trait)]
+pub mod server {
+    tonic::include_proto!("engula.storage.v1.shared.server");
+}
 
-mod proto;
-mod server;
-mod master;
-
-use self::{
-    proto::{master as masterpb, server as serverpb},
-};
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
+pub mod master {
+    tonic::include_proto!("engula.storage.v1.shared.master");
 }

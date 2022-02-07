@@ -12,15 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(type_alias_impl_trait)]
-
-mod proto;
 mod server;
-mod master;
-
-use self::{
-    proto::{master as masterpb, server as serverpb},
-};
+mod storage;
 
 #[cfg(test)]
 mod tests {

@@ -2,7 +2,15 @@
 name = "shared-storage"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "Apache-2.0"
 
 [dependencies]
+async-trait = "0.1"
+anyhow = "1.0.52"
+prost = "0.9"
+tokio = { version = "1.13", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+tonic = "0.6"
+
+[build-dependencies]
+tonic-build = "0.6"

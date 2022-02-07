@@ -16,8 +16,7 @@ use async_trait::async_trait;
 
 use crate::serverpb;
 
-struct Server {
-}
+struct Server {}
 
 #[async_trait]
 impl serverpb::cache_node_service_server::CacheNodeService for Server {

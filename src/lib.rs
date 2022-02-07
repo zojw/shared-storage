@@ -14,13 +14,11 @@
 
 #![feature(type_alias_impl_trait)]
 
+mod master;
 mod proto;
 mod server;
-mod master;
 
-use self::{
-    proto::{master as masterpb, server as serverpb},
-};
+use self::proto::{master as masterpb, server as serverpb};
 
 #[cfg(test)]
 mod tests {

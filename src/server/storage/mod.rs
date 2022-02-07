@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod file;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use tokio::io::AsyncWrite;
@@ -20,15 +22,10 @@ use tokio::io::AsyncWrite;
 trait Storage {
     type Writer: AsyncWrite;
 
-    async fn create_bucket(bucket: impl Into<String>) -> Result<()>;
-    async fn delete_bucket(bucket: impl Into<String>) -> Result<()>;
-    async fn list_buckets() -> Result<Vec<String>>;
-    fn put_object(bucket: impl Into<String>, object: impl Into<String>) -> Self::Writer;
-    async fn read_object(
-        bucket: impl Into<String>,
-        object: impl Into<String>,
-        pos: i32,
-        len: i32,
-    ) -> Result<Vec<u8>>;
-    async fn list_objects(bucket: impl Into<String>) -> Result<Vec<String>>;
+    async fn create_bucket(&self, bucket: &str) -> Result<()>;
+    async fn delete_bucket(&self, bucket: &str) -> Result<()>;
+    async fn list_buckets(&self) -> Result<Vec<String>>;
+    fn put_object(&self, bucket: &str, object: &str) -> Self::Writer;
+    async fn read_object(bucket: &str, object: &str, pos: i32, len: i32) -> Result<Vec<u8>>;
+    async fn list_objects(&self, bucket: &str) -> Result<Vec<String>>;
 }

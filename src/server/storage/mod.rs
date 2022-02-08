@@ -20,12 +20,12 @@ use tokio::io::AsyncWrite;
 
 #[async_trait]
 trait Storage {
-    type Writer: AsyncWrite;
+    type Writer: AsyncWrite + 'static;
 
     async fn create_bucket(&self, bucket: &str) -> Result<()>;
     async fn delete_bucket(&self, bucket: &str) -> Result<()>;
     async fn list_buckets(&self) -> Result<Vec<String>>;
-    fn put_object(&self, bucket: &str, object: &str) -> Self::Writer;
-    async fn read_object(bucket: &str, object: &str, pos: i32, len: i32) -> Result<Vec<u8>>;
+    fn put_object(&self, bucket: &str, object: &str) -> Result<Self::Writer>;
+    async fn read_object(&self, bucket: &str, object: &str, pos: i32, len: i32) -> Result<Vec<u8>>;
     async fn list_objects(&self, bucket: &str) -> Result<Vec<String>>;
 }

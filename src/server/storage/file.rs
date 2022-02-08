@@ -12,13 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::{Path, PathBuf};
+use std::{
+    borrow::BorrowMut,
+    future::Future,
+    os::unix::prelude::FileExt,
+    path::{Path, PathBuf},
+    pin::Pin,
+    task::Poll,
+};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use tokio::{
-    fs::{create_dir_all, read_dir, remove_dir, DirBuilder, OpenOptions},
-    io::AsyncWrite,
+    fs::{create_dir_all, read_dir, remove_dir, DirBuilder, File, OpenOptions},
+    io::{AsyncReadExt, AsyncWrite, AsyncWriteExt},
 };
 
 struct FileStorage {
@@ -48,13 +55,13 @@ impl super::Storage for FileStorage {
     async fn create_bucket(&self, bucket: &str) -> Result<()> {
         let path = self.bucket_path(bucket);
         create_dir_all(&path).await?;
-        todo!()
+        Ok(())
     }
 
     async fn delete_bucket(&self, bucket: &str) -> Result<()> {
         let path = self.bucket_path(bucket);
         remove_dir(path).await?;
-        todo!()
+        Ok(())
     }
 
     async fn list_buckets(&self) -> Result<Vec<String>> {
@@ -64,15 +71,36 @@ impl super::Storage for FileStorage {
         while let Some(entry) = entries.next_entry().await? {
             bs.push(entry.file_name().to_str().unwrap().to_owned())
         }
-        return Ok(bs);
+        Ok(bs)
     }
 
-    fn put_object(&self, bucket: &str, object: &str) -> Self::Writer {
-        todo!()
+    fn put_object(&self, bucket: &str, object: &str) -> Result<Self::Writer> {
+        let path = self.object_path(bucket, object);
+        let buf = Vec::new();
+        Ok(FileWriter {
+            path,
+            buf,
+            close_fut: None,
+        })
     }
 
-    async fn read_object(bucket: &str, object: &str, pos: i32, len: i32) -> Result<Vec<u8>> {
-        todo!()
+    async fn read_object(&self, bucket: &str, object: &str, pos: i32, len: i32) -> Result<Vec<u8>> {
+        let path = self.object_path(bucket, object);
+        let f: File = OpenOptions::new().read(true).open(&path).await?;
+        let std: std::fs::File = f.into_std().await;
+        let mut res = Vec::new();
+        let mut pos = pos.to_owned() as u64;
+        loop {
+            let mut buf = vec![0u8; len as usize];
+            let read_len = std.read_at(&mut buf, pos)?;
+            let buf = &buf[..read_len];
+            res.extend_from_slice(buf);
+            if buf.len() == len as usize {
+                break;
+            }
+            pos += read_len as u64;
+        }
+        Ok(res)
     }
 
     async fn list_objects(&self, bucket: &str) -> Result<Vec<String>> {
@@ -86,28 +114,65 @@ impl super::Storage for FileStorage {
     }
 }
 
-struct FileWriter {}
+type PinnedFuture<T> = Pin<Box<dyn Future<Output = Result<T>> + 'static + Send>>;
+
+struct FileWriter {
+    path: PathBuf,
+    buf: Vec<u8>,
+    close_fut: Option<PinnedFuture<()>>,
+}
+
+impl FileWriter {
+    async fn write_all(path: impl AsRef<Path>, src: Vec<u8>) -> Result<()> {
+        let mut f = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .await?;
+        f.write_all(&src).await?;
+        Ok(())
+    }
+}
 
 impl AsyncWrite for FileWriter {
     fn poll_write(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
+        mut self: std::pin::Pin<&mut Self>,
+        _cx: &mut std::task::Context<'_>,
         buf: &[u8],
-    ) -> std::task::Poll<std::result::Result<usize, std::io::Error>> {
-        todo!()
+    ) -> Poll<std::result::Result<usize, std::io::Error>> {
+        let len = buf.len();
+        self.buf.extend_from_slice(buf);
+        Poll::Ready(Ok(len))
     }
 
     fn poll_flush(
         self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<std::result::Result<(), std::io::Error>> {
-        todo!()
+        _cx: &mut std::task::Context<'_>,
+    ) -> Poll<std::result::Result<(), std::io::Error>> {
+        Poll::Ready(Ok(()))
     }
 
     fn poll_shutdown(
-        self: std::pin::Pin<&mut Self>,
+        mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<std::result::Result<(), std::io::Error>> {
-        todo!()
+    ) -> Poll<std::result::Result<(), std::io::Error>> {
+        let me = self.get_mut();
+        let mut fut = me
+            .close_fut
+            .take()
+            .unwrap_or_else(|| Box::pin(Self::write_all(&me.path, me.buf)));
+
+        match fut.as_mut().poll(cx) {
+            Poll::Pending => {
+                me.close_fut = Some(fut);
+                Poll::Pending
+            }
+            Poll::Ready(Ok(_)) => Poll::Ready(Ok(())),
+            Poll::Ready(Err(e)) => Poll::Ready(Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ))),
+        }
     }
 }

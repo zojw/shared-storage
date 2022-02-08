@@ -15,17 +15,26 @@
 use async_trait::async_trait;
 use tonic::{Request, Response, Status};
 
-use crate::client::apipb;
+use crate::{
+    blobstore::{BlobStore, MockBlobStore},
+    client::apipb,
+};
 
-pub struct BlobStoreWriter {}
+pub struct BlobStoreWriter {
+    pub blob_store: MockBlobStore,
+}
 
 #[async_trait]
 impl apipb::writer_server::Writer for BlobStoreWriter {
     async fn write(
         &self,
-        _request: Request<apipb::WriteRequest>,
+        request: Request<apipb::WriteRequest>,
     ) -> Result<Response<apipb::WriteResponse>, Status> {
-        // TODO: write s3 via aws vendor store.
+        let inner = request.get_ref();
+        self.blob_store
+            .put_object(&inner.bucket, &inner.object, inner.content.to_owned())
+            .await
+            .unwrap(); // FIXME...
         Ok(Response::new(apipb::WriteResponse {}))
     }
 }

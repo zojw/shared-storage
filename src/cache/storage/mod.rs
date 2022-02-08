@@ -19,8 +19,8 @@ use async_trait::async_trait;
 use tokio::io::AsyncWrite;
 
 #[async_trait]
-trait Storage {
-    type Writer: AsyncWrite + 'static;
+trait CacheStorage {
+    type Writer: AsyncWrite;
 
     async fn create_bucket(&self, bucket: &str) -> Result<()>;
     async fn delete_bucket(&self, bucket: &str) -> Result<()>;

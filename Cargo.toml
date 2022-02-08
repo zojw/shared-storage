@@ -13,6 +13,7 @@ tokio-stream = { version = "0.1", features = ["net"] }
 tonic = "0.6"
 tower = {version = "0.4"}
 futures = { version = "0.3", default-features = false, features = ["alloc"] }
+thiserror = "1.0"
 
 [build-dependencies]
 tonic-build = "0.6"

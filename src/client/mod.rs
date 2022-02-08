@@ -37,7 +37,10 @@ mod tests {
         blob_writer::BlobStoreWriter,
         MockStream,
     };
-    use crate::client::{apipb, client::Client};
+    use crate::{
+        blobstore::MockBlobStore,
+        client::{apipb, client::Client},
+    };
 
     #[tokio::test]
     async fn it_works() -> Result<()> {
@@ -52,7 +55,8 @@ mod tests {
 
     async fn build_local_blob_writer() -> Result<WriterClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
-        let blob_writer = BlobStoreWriter {};
+        let blob_store = MockBlobStore::default();
+        let blob_writer = BlobStoreWriter { blob_store };
         tokio::spawn(async move {
             Server::builder()
                 .add_service(apipb::writer_server::WriterServer::new(blob_writer))

@@ -12,16 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(type_alias_impl_trait)]
+mod mock;
+mod s3;
 
-mod blobstore;
-mod cache;
-mod client;
-mod error;
-mod manifest;
+use anyhow::Result;
+use async_trait::async_trait;
+pub use mock::MemBlobStore as MockBlobStore;
+
+#[async_trait]
+pub trait BlobStore {
+    async fn create_bucket(&self, bucket: &str) -> Result<()>;
+    async fn delete_bucket(&self, bucket: &str) -> Result<()>;
+    async fn list_buckets(&self) -> Result<Vec<String>>;
+    async fn list_objects(&self, bucket: &str) -> Result<Vec<String>>;
+
+    async fn put_object(&self, bucket: &str, object: &str, content: Vec<u8>) -> Result<()>;
+    async fn read_object(&self, bucket: &str, object: &str) -> Result<Vec<u8>>;
+}
 
 #[cfg(test)]
 mod tests {
+
     #[test]
     fn it_works() {
         let result = 2 + 2;

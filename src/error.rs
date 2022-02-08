@@ -12,19 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(type_alias_impl_trait)]
+use thiserror::Error;
+use tonic::{Code, Status};
 
-mod blobstore;
-mod cache;
-mod client;
-mod error;
-mod manifest;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
+/// Errors for all storage operations.
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("{0} is not found")]
+    NotFound(String),
+    #[error("{0} already exists")]
+    AlreadyExists(String),
+    #[error("{0}")]
+    InvalidArgument(String),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Unknown(Box<dyn std::error::Error + Sync + Send + 'static>),
 }

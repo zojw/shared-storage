@@ -16,10 +16,10 @@ use async_trait::async_trait;
 
 use crate::manifest::manifestpb;
 
-struct Master {}
+struct BucketService {}
 
 #[async_trait]
-impl manifestpb::bucket_service_server::BucketService for Master {
+impl manifestpb::bucket_service_server::BucketService for BucketService {
     async fn create_bucket(
         &self,
         _request: tonic::Request<manifestpb::CreateBucketRequest>,

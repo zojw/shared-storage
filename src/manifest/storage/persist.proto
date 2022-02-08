@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(type_alias_impl_trait)]
-
-mod blobstore;
-mod cache;
-mod client;
-mod error;
-mod manifest;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
+message VersionEdit {
+	map<string, bytes> put_meta = 1;
+	repeated string remove_meta = 2;
+	repeated string add_buckets = 3;
+	repeated string remove_buckets = 4;
+	map<string, BucketUpdate> update_buckets = 5;
 }
+
+message BucketUpdate {
+	map<string, bytes> add_objects = 1;
+	repeated string remove_objects = 2;
+}
+

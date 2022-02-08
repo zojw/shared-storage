@@ -12,19 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(type_alias_impl_trait)]
-
-mod blobstore;
-mod cache;
-mod client;
-mod error;
-mod manifest;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}
+// Simple manifest storage base on blobstore.
+trait MetaStorage {}

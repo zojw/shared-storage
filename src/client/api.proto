@@ -1,0 +1,82 @@
+// Copyright 2022 The Engula Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+syntax = "proto3";
+
+package engula.storage.v1.client.api;
+
+// Write new blob to store.
+// Default impl by client-side writer that write to cloud vendor directly
+service Writer {
+	rpc Write(WriteRequest) returns (WriteResponse) {}
+}
+
+// Read objects from store.
+// Default impl by cache-server's server-side to read from its local cache storage.
+service Reader {
+	rpc Query(QueryRequest) returns (QueryResponse) {}
+}
+
+// Locate stores for keys.
+// Default impl by manifest-server's server-side
+// Client-side should cache it to support locate complex expression like: a < 1 and b > 1 or c < 1
+service Locator {
+	rpc LocateKeys(LocateRequest) returns (LocateResponse) {}
+}
+
+message WriteRequest {
+	string bucket = 1;
+	string object = 2;
+	bytes content = 3;
+}
+
+message WriteResponse {}
+
+message QueryRequest {
+	QueryExp condition = 1;
+}
+
+message QueryExp {
+}
+
+message QueryResponse {
+	repeated Object objects = 1;
+}
+
+message Object {
+	bytes key = 1;
+	Value value = 2;
+}
+
+message Value {
+	oneof content {
+		bytes bytes_value = 1;
+	}
+}
+
+
+message LocateRequest {
+	repeated bytes keys = 1;
+}
+
+message LocateResponse {
+	repeated KeyLocation locations = 1;
+}
+
+message KeyLocation {
+	bytes start = 1;
+	bytes end  = 2;
+	uint64 store = 3;
+}

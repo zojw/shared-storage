@@ -12,10 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod server {
-    tonic::include_proto!("engula.storage.v1.shared.server");
+mod locator;
+mod server;
+
+pub mod manifestpb {
+    tonic::include_proto!("engula.storage.v1.manifest");
 }
 
-pub mod master {
-    tonic::include_proto!("engula.storage.v1.shared.master");
+pub use locator::CacheServerLocator;
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn it_works() {
+        let result = 2 + 2;
+        assert_eq!(result, 4);
+    }
 }

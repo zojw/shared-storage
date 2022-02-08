@@ -12,9 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("src/client/api.proto")?;
-    tonic_build::compile_protos("src/manifest/manifest.proto")?;
-    tonic_build::compile_protos("src/cache/cache.proto")?;
-    Ok(())
+use async_trait::async_trait;
+use tonic::{Request, Response, Status};
+
+use crate::client::apipb;
+
+pub struct BlobStoreWriter {}
+
+#[async_trait]
+impl apipb::writer_server::Writer for BlobStoreWriter {
+    async fn write(
+        &self,
+        _request: Request<apipb::WriteRequest>,
+    ) -> Result<Response<apipb::WriteResponse>, Status> {
+        // TODO: write s3 via aws vendor store.
+        Ok(Response::new(apipb::WriteResponse {}))
+    }
 }

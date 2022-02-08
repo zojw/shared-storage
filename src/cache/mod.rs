@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod reader;
 mod server;
 mod storage;
 
+pub mod cachepb {
+    tonic::include_proto!("engula.storage.v1.cache");
+}
+
+pub use reader::CacheReader;
+
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn it_works() {

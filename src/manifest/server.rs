@@ -14,37 +14,37 @@
 
 use async_trait::async_trait;
 
-use crate::masterpb;
+use crate::manifest::manifestpb;
 
 struct Master {}
 
 #[async_trait]
-impl masterpb::bucket_service_server::BucketService for Master {
+impl manifestpb::bucket_service_server::BucketService for Master {
     async fn create_bucket(
         &self,
-        _request: tonic::Request<masterpb::CreateBucketRequest>,
-    ) -> Result<tonic::Response<masterpb::CreateBucketResponse>, tonic::Status> {
+        _request: tonic::Request<manifestpb::CreateBucketRequest>,
+    ) -> Result<tonic::Response<manifestpb::CreateBucketResponse>, tonic::Status> {
         todo!()
     }
 
     async fn delete_bucket(
         &self,
-        _request: tonic::Request<masterpb::DeleteBucketRequest>,
-    ) -> Result<tonic::Response<masterpb::DeleteBucketResponse>, tonic::Status> {
+        _request: tonic::Request<manifestpb::DeleteBucketRequest>,
+    ) -> Result<tonic::Response<manifestpb::DeleteBucketResponse>, tonic::Status> {
         todo!()
     }
 
     async fn list_buckets(
         &self,
-        _request: tonic::Request<masterpb::ListBucketsRequest>,
-    ) -> Result<tonic::Response<masterpb::ListBucketsResponse>, tonic::Status> {
+        _request: tonic::Request<manifestpb::ListBucketsRequest>,
+    ) -> Result<tonic::Response<manifestpb::ListBucketsResponse>, tonic::Status> {
         todo!()
     }
 
     async fn list_objects(
         &self,
-        _request: tonic::Request<masterpb::ListObjectsRequest>,
-    ) -> Result<tonic::Response<masterpb::ListObjectsResponse>, tonic::Status> {
+        _request: tonic::Request<manifestpb::ListObjectsRequest>,
+    ) -> Result<tonic::Response<manifestpb::ListObjectsResponse>, tonic::Status> {
         todo!()
     }
 }

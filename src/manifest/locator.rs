@@ -12,17 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(type_alias_impl_trait)]
+use async_trait::async_trait;
+use tonic::{Request, Response, Status};
 
-mod cache;
-mod client;
-mod manifest;
+use crate::client::apipb::{self, KeyLocation, LocateRequest, LocateResponse};
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+pub struct CacheServerLocator {}
+
+#[async_trait]
+impl apipb::locator_server::Locator for CacheServerLocator {
+    async fn locate_keys(
+        &self,
+        _request: Request<LocateRequest>,
+    ) -> Result<Response<LocateResponse>, Status> {
+        let locations = vec![KeyLocation {
+            start: b"1".to_vec(),
+            end: b"3".to_vec(),
+            store: 1,
+        }];
+        Ok(Response::new(LocateResponse { locations }))
     }
 }

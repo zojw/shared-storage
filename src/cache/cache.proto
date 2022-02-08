@@ -14,7 +14,7 @@
 
 syntax = "proto3";
 
-package engula.storage.v1.shared.server;
+package engula.storage.v1.cache;
 
 service BucketService {
   rpc CreateBucket(CreateBucketRequest) returns (CreateBucketResponse) {}

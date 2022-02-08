@@ -14,40 +14,40 @@
 
 use async_trait::async_trait;
 
-use crate::serverpb;
+use crate::cache::cachepb;
 
 struct Server {}
 
 #[async_trait]
-impl serverpb::cache_node_service_server::CacheNodeService for Server {
+impl cachepb::cache_node_service_server::CacheNodeService for Server {
     async fn heartbeat(
         &self,
-        _request: tonic::Request<serverpb::HeartbeatRequest>,
-    ) -> Result<tonic::Response<serverpb::HeartbeatResponse>, tonic::Status> {
+        _request: tonic::Request<cachepb::HeartbeatRequest>,
+    ) -> Result<tonic::Response<cachepb::HeartbeatResponse>, tonic::Status> {
         todo!()
     }
 }
 
 #[async_trait]
-impl serverpb::object_service_server::ObjectService for Server {
+impl cachepb::object_service_server::ObjectService for Server {
     async fn upload_object(
         &self,
-        _request: tonic::Request<tonic::Streaming<serverpb::UploadObjectRequest>>,
-    ) -> Result<tonic::Response<serverpb::UploadObjectResponse>, tonic::Status> {
+        _request: tonic::Request<tonic::Streaming<cachepb::UploadObjectRequest>>,
+    ) -> Result<tonic::Response<cachepb::UploadObjectResponse>, tonic::Status> {
         todo!()
     }
 
     async fn read_object(
         &self,
-        _request: tonic::Request<serverpb::ReadObjectRequest>,
-    ) -> Result<tonic::Response<serverpb::ReadObjectResponse>, tonic::Status> {
+        _request: tonic::Request<cachepb::ReadObjectRequest>,
+    ) -> Result<tonic::Response<cachepb::ReadObjectResponse>, tonic::Status> {
         todo!()
     }
 
     async fn delete_object(
         &self,
-        _request: tonic::Request<serverpb::DeleteObjectRequest>,
-    ) -> Result<tonic::Response<serverpb::DeleteObjectResponse>, tonic::Status> {
+        _request: tonic::Request<cachepb::DeleteObjectRequest>,
+    ) -> Result<tonic::Response<cachepb::DeleteObjectResponse>, tonic::Status> {
         todo!()
     }
 }

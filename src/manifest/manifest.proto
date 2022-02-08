@@ -14,17 +14,13 @@
 
 syntax = "proto3";
 
-package engula.storage.v1.shared.master;
+package engula.storage.v1.manifest;
 
 service BucketService {
 	rpc CreateBucket(CreateBucketRequest) returns (CreateBucketResponse) {}
 	rpc DeleteBucket(DeleteBucketRequest) returns (DeleteBucketResponse) {}
 	rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
 	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
-}
-
-service ObjectPlacement {
-	rpc PlaceLookup(PlaceLookupRequest) returns (PlaceLookupResponse) {}
 }
 
 message CreateBucketRequest { string bucket = 1; }
@@ -42,15 +38,3 @@ message ListBucketsResponse { repeated string buckets = 1; }
 message ListObjectsRequest { string bucket = 1; }
 
 message ListObjectsResponse { repeated string objects = 1; }
-
-message PlaceLookupRequest {
-	string bucket = 1;
-	string object = 2;
-	enum LookupUsage {
-		Read = 0;
-		Write = 1;
-	}
-	LookupUsage usage = 3;
-}
-
-message PlaceLookupResponse { repeated string servers = 1; }

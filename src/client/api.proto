@@ -17,11 +17,54 @@ syntax = "proto3";
 
 package engula.storage.v1.client.api;
 
-// Write new blob to store.
-// Default impl by client-side writer that write to cloud vendor directly
-service Writer {
-	rpc Write(WriteRequest) returns (WriteResponse) {}
+import "metadata.proto";
+
+// Upload new blob to store.
+// Default impl by cache-server server-side writer that write to cloud vendor
+service BlobUploader {
+	rpc Upload(BlobRequest) returns (BlobResponse) {}
 }
+
+service BlobUploadControl {
+	rpc PrepareUpload(PrepareUploadRequest) returns (PrepareUploadResponse) {}
+	rpc FinishUpload(FinishUploadRequest) returns (FinishUploadResponse) {}
+	rpc RollbackUpload(RollbackUploadRequest) returns (RollbackUploadResponse) {}
+}
+
+message PrepareUploadRequest {
+	repeated engula.storage.v1.manifest.storage.NewBlob blobs = 1;
+}
+
+message PrepareUploadResponse {
+	string upload_token = 1;
+	repeated WriteLocation locations = 2;
+}
+
+message WriteLocation {
+	string bucket = 1;
+	string blob = 2;
+	string store = 3;
+}
+
+message FinishUploadRequest {
+	string upload_token = 1;
+}
+
+message FinishUploadResponse {}
+
+message RollbackUploadRequest {
+	string upload_token = 1;
+}
+
+message RollbackUploadResponse {}
+
+message BlobRequest {
+	string bucket = 1;
+	string object = 2;
+	bytes content = 3;
+}
+
+message BlobResponse {}
 
 // Read objects from store.
 // Default impl by cache-server's server-side to read from its local cache storage.
@@ -35,14 +78,6 @@ service Reader {
 service Locator {
 	rpc LocateKeys(LocateRequest) returns (LocateResponse) {}
 }
-
-message WriteRequest {
-	string bucket = 1;
-	string object = 2;
-	bytes content = 3;
-}
-
-message WriteResponse {}
 
 message QueryRequest {
 	QueryExp condition = 1;

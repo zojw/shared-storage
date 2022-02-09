@@ -26,14 +26,6 @@ service BucketService {
   rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
 }
 
-service ObjectService {
-  rpc UploadObject(stream UploadObjectRequest) returns (UploadObjectResponse) {}
-
-  rpc ReadObject(ReadObjectRequest) returns (ReadObjectResponse) {}
-
-  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse) {}
-}
-
 service CacheNodeService {
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
 }
@@ -53,32 +45,6 @@ message ListBucketsResponse { repeated string buckets = 1; }
 message ListObjectsRequest { string bucket = 1; }
 
 message ListObjectsResponse { repeated string objects = 1; }
-
-message UploadObjectRequest {
-  string bucket = 1;
-  string object = 2;
-  bytes content = 3;
-  bool replica_request = 4;
-  repeated string replica_chain = 5;
-}
-
-message UploadObjectResponse {}
-
-message ReadObjectRequest {
-  string bucket = 1;
-  string object = 2;
-  int32 pos = 3;
-  int32 len = 4;
-}
-
-message ReadObjectResponse { bytes content = 1; }
-
-message DeleteObjectRequest {
-  string bucket = 1;
-  string object = 2;
-}
-
-message DeleteObjectResponse {}
 
 message HeartbeatRequest {
   uint32 server_id = 1;

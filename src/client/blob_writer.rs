@@ -25,15 +25,15 @@ pub struct BlobStoreWriter {
 }
 
 #[async_trait]
-impl apipb::writer_server::Writer for BlobStoreWriter {
-    async fn write(
+impl apipb::blob_uploader_server::BlobUploader for BlobStoreWriter {
+    async fn upload(
         &self,
-        request: Request<apipb::WriteRequest>,
-    ) -> Result<Response<apipb::WriteResponse>, Status> {
+        request: Request<apipb::BlobRequest>,
+    ) -> Result<Response<apipb::BlobResponse>, Status> {
         let inner = request.get_ref();
         self.blob_store
             .put_object(&inner.bucket, &inner.object, inner.content.to_owned())
             .await?;
-        Ok(Response::new(apipb::WriteResponse {}))
+        Ok(Response::new(apipb::BlobResponse {}))
     }
 }

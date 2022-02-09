@@ -18,15 +18,13 @@ use crate::error::Result;
 
 mod memblob;
 
-pub mod metapb {
-    tonic::include_proto!("engula.storage.v1.manifest.metadata");
-}
+tonic::include_proto!("engula.storage.v1.manifest.storage");
 
 #[async_trait]
 trait MetaStorage {
-    async fn append(&self, ve: metapb::VersionEdit) -> Result<()>;
+    async fn append(&self, ve: VersionEdit) -> Result<()>;
 
-    async fn read_all(&self) -> Result<Vec<metapb::VersionEdit>>;
+    async fn read_all(&self) -> Result<Vec<VersionEdit>>;
 }
 
 #[cfg(test)]
@@ -35,9 +33,7 @@ mod tests {
     use std::collections::HashMap;
 
     use super::{
-        memblob::MemBlobMetaStore,
-        metapb::{BlobStats, BucketUpdate, DeleteBlob, NewBlob, VersionEdit},
-        MetaStorage,
+        memblob::MemBlobMetaStore, BlobStats, DeleteBlob, MetaStorage, NewBlob, VersionEdit,
     };
     use crate::{blobstore::MockBlobStore, error::Result};
 
@@ -45,34 +41,27 @@ mod tests {
     async fn it_works() -> Result<()> {
         let bs = MockBlobStore::default();
         let s = MemBlobMetaStore::new(bs).await?;
-
-        let mut update_buckets = HashMap::new();
-        update_buckets.insert(
-            "b1".to_owned(),
-            BucketUpdate {
-                add_blobs: vec![NewBlob {
-                    blob: "o11".to_owned(),
-                    level: 0,
-                    stats: Some(BlobStats {
-                        smallest: b"1".to_vec(),
-                        largest: b"2".to_vec(),
-                        smallest_sequence: 1,
-                        largest_sequence: 2,
-                        object_num: 2,
-                        deletion_num: 0,
-                    }),
-                }],
-                delete_blobs: vec![DeleteBlob {
-                    blob: "o2".to_owned(),
-                    level: 0,
-                }],
-            },
-        );
-
         s.append(VersionEdit {
             add_buckets: vec!["b1".to_owned(), "b2".to_owned()],
             remove_buckets: vec!["b0".to_owned()],
-            update_buckets,
+            add_blobs: vec![NewBlob {
+                bucket: "b1".to_owned(),
+                blob: "o11".to_owned(),
+                level: 0,
+                stats: Some(BlobStats {
+                    smallest: b"1".to_vec(),
+                    largest: b"2".to_vec(),
+                    smallest_sequence: 1,
+                    largest_sequence: 2,
+                    object_num: 2,
+                    deletion_num: 0,
+                }),
+            }],
+            delete_blobs: vec![DeleteBlob {
+                bucket: "b1".to_owned(),
+                blob: "o2".to_owned(),
+                level: 0,
+            }],
         })
         .await?;
 

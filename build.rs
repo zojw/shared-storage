@@ -13,9 +13,16 @@
 // limitations under the License.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("src/client/api.proto")?;
+    tonic_build::configure().compile(
+        &[
+            "src/client/api.proto",
+            "src/manifest/storage/metadata.proto",
+        ],
+        &["src/client", "src/manifest/storage"],
+    )?;
+    // tonic_build::compile_protos("src/client/api.proto")?;
     tonic_build::compile_protos("src/manifest/manifest.proto")?;
-    tonic_build::compile_protos("src/manifest/storage/metadata.proto")?;
+    // tonic_build::compile_protos("src/manifest/storage/metadata.proto")?;
     tonic_build::compile_protos("src/cache/cache.proto")?;
     Ok(())
 }

@@ -18,7 +18,6 @@ use async_trait::async_trait;
 use prost::Message;
 use tokio::sync::Mutex;
 
-use super::metapb::{self, VersionEdit, VersionEditList};
 use crate::{
     blobstore::BlobStore,
     error::{Error, Result},
@@ -33,7 +32,7 @@ where
     B: BlobStore,
 {
     blob_store: B,
-    versions: Arc<Mutex<Vec<metapb::VersionEdit>>>,
+    versions: Arc<Mutex<Vec<super::VersionEdit>>>,
 }
 
 impl<B> MemBlobMetaStore<B>
@@ -69,7 +68,7 @@ where
                 Err(Error::NotFound(_)) => Ok(vec![]),
                 o @ _ => o,
             }?;
-            VersionEditList::decode(&content[..])?
+            super::VersionEditList::decode(&content[..])?
         };
         let mut versions = self.versions.lock().await;
         *versions = vs.versions.clone();
@@ -78,7 +77,7 @@ where
 
     async fn persist_all(&self) -> Result<()> {
         let versions = self.versions.lock().await;
-        let vs = VersionEditList {
+        let vs = super::VersionEditList {
             versions: versions.to_vec(),
         };
         let content = vs.encode_to_vec();
@@ -94,17 +93,19 @@ impl<B> super::MetaStorage for MemBlobMetaStore<B>
 where
     B: BlobStore + Sync + Send,
 {
-    async fn append(&self, ve: super::metapb::VersionEdit) -> Result<()> {
+    async fn append(&self, ve: super::VersionEdit) -> Result<()> {
+        // TODO: how to avoid fake leader append?
         async {
             let versions = self.versions.clone();
             let mut versions = versions.lock().await;
             versions.push(ve.to_owned());
-        }.await;
+        }
+        .await;
         self.persist_all().await?;
         Ok(())
     }
 
-    async fn read_all(&self) -> Result<Vec<VersionEdit>> {
+    async fn read_all(&self) -> Result<Vec<super::VersionEdit>> {
         let vs = {
             let versions = self.versions.clone();
             let vs = versions.lock().await;

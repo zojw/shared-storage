@@ -14,13 +14,15 @@
 
 mod bucket;
 mod locator;
-mod storage;
+mod server;
+pub mod storage;
 
 pub mod manifestpb {
     tonic::include_proto!("engula.storage.v1.manifest");
 }
 
 pub use locator::CacheServerLocator;
+pub use server::Server;
 
 #[cfg(test)]
 mod tests {

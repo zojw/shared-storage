@@ -14,20 +14,17 @@
 
 syntax = "proto3";
 
-package engula.storage.v1.manifest.metadata;
+package engula.storage.v1.manifest.storage;
 
 message VersionEdit {
-	repeated string add_buckets = 3;
-	repeated string remove_buckets = 4;
-	map<string, BucketUpdate> update_buckets = 5;
-}
-
-message BucketUpdate {
-	repeated NewBlob add_blobs = 1;
-	repeated DeleteBlob delete_blobs = 2;
+	repeated string add_buckets = 1;
+	repeated string remove_buckets = 2;
+	repeated NewBlob add_blobs = 3;
+	repeated DeleteBlob delete_blobs = 4;
 }
 
 message NewBlob {
+	string bucket = 1;
 	string blob = 2;
 	int32 level = 3;
 	BlobStats stats = 4;
@@ -43,6 +40,7 @@ message BlobStats {
 }
 
 message DeleteBlob {
+	string bucket = 1;
 	string blob = 2;
 	int32 level = 3;
 }

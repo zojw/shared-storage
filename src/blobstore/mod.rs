@@ -15,9 +15,10 @@
 mod mock;
 mod s3;
 
-use crate::error::Result;
 use async_trait::async_trait;
 pub use mock::MemBlobStore as MockBlobStore;
+
+use crate::error::Result;
 
 #[async_trait]
 pub trait BlobStore {

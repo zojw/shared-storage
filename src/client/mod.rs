@@ -29,51 +29,28 @@ use tonic::transport::server::Connected;
 
 #[cfg(test)]
 mod tests {
-    use crate::error::Result;
     use tonic::transport::{Channel, Endpoint, Server, Uri};
 
     use super::{
-        apipb::{locator_client::LocatorClient, writer_client::WriterClient},
-        blob_writer::BlobStoreWriter,
+        apipb::{
+            blob_upload_control_client::BlobUploadControlClient, locator_client::LocatorClient,
+        },
         MockStream,
     };
     use crate::{
-        blobstore::MockBlobStore,
         client::{apipb, client::Client},
+        error::Result,
     };
 
     #[tokio::test]
     async fn it_works() -> Result<()> {
-        let blob_writer = build_local_blob_writer().await?;
+        let blob_control = build_blob_control().await?;
         let manifest_locator = build_manifest_locator().await?;
-        let mut client = Client::new(blob_writer, manifest_locator);
+        let mut client = Client::new(blob_control, manifest_locator);
         client.flush("b1", "o1", b"abc".to_vec()).await?;
         let res = client.query(apipb::QueryExp {}).await?;
         assert_eq!(res.len(), 1);
         Ok(())
-    }
-
-    async fn build_local_blob_writer() -> Result<WriterClient<Channel>> {
-        let (client, server) = tokio::io::duplex(1024);
-        let blob_store = MockBlobStore::default();
-        let blob_writer = BlobStoreWriter { blob_store };
-        tokio::spawn(async move {
-            Server::builder()
-                .add_service(apipb::writer_server::WriterServer::new(blob_writer))
-                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
-                    MockStream(server),
-                )]))
-                .await
-        });
-        let mut client = Some(client);
-        let channel = Endpoint::try_from("http://[::]:50051")?
-            .connect_with_connector(tower::service_fn(move |_: Uri| {
-                let client = client.take().unwrap();
-                async move { Ok::<_, std::io::Error>(MockStream(client)) }
-            }))
-            .await?;
-        let client = apipb::writer_client::WriterClient::new(channel);
-        Ok(client)
     }
 
     async fn build_manifest_locator() -> Result<LocatorClient<Channel>> {
@@ -95,6 +72,30 @@ mod tests {
             }))
             .await?;
         let client = apipb::locator_client::LocatorClient::new(channel);
+        Ok(client)
+    }
+
+    async fn build_blob_control() -> Result<BlobUploadControlClient<Channel>> {
+        let (client, server) = tokio::io::duplex(1024);
+        let cache_server = crate::manifest::Server {};
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(
+                    apipb::blob_upload_control_server::BlobUploadControlServer::new(cache_server),
+                )
+                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
+                    MockStream(server),
+                )]))
+                .await
+        });
+        let mut client = Some(client);
+        let channel = Endpoint::try_from("http://[::]:50052")?
+            .connect_with_connector(tower::service_fn(move |_: Uri| {
+                let client = client.take().unwrap();
+                async move { Ok::<_, std::io::Error>(MockStream(client)) }
+            }))
+            .await?;
+        let client = apipb::blob_upload_control_client::BlobUploadControlClient::new(channel);
         Ok(client)
     }
 }

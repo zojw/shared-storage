@@ -14,26 +14,30 @@
 
 use async_trait::async_trait;
 
-use crate::{cache::cachepb, client::apipb};
+use crate::client::apipb;
 
-struct Server {}
+pub struct Server {}
 
 #[async_trait]
-impl apipb::blob_uploader_server::BlobUploader for Server {
-    async fn upload(
+impl apipb::blob_upload_control_server::BlobUploadControl for Server {
+    async fn prepare_upload(
         &self,
-        request: tonic::Request<apipb::BlobRequest>,
-    ) -> Result<tonic::Response<apipb::BlobResponse>, tonic::Status> {
+        request: tonic::Request<apipb::PrepareUploadRequest>,
+    ) -> Result<tonic::Response<apipb::PrepareUploadResponse>, tonic::Status> {
         todo!()
     }
-}
 
-#[async_trait]
-impl cachepb::cache_node_service_server::CacheNodeService for Server {
-    async fn heartbeat(
+    async fn finish_upload(
         &self,
-        _request: tonic::Request<cachepb::HeartbeatRequest>,
-    ) -> Result<tonic::Response<cachepb::HeartbeatResponse>, tonic::Status> {
+        request: tonic::Request<apipb::FinishUploadRequest>,
+    ) -> Result<tonic::Response<apipb::FinishUploadResponse>, tonic::Status> {
+        todo!()
+    }
+
+    async fn rollback_upload(
+        &self,
+        request: tonic::Request<apipb::RollbackUploadRequest>,
+    ) -> Result<tonic::Response<apipb::RollbackUploadResponse>, tonic::Status> {
         todo!()
     }
 }

@@ -17,11 +17,10 @@ use std::{
     sync::Arc,
 };
 
-use crate::error::Result;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
-use crate::error::Error;
+use crate::error::{Error, Result};
 
 type Object = Arc<Vec<u8>>;
 type Bucket = Arc<Mutex<HashMap<String, Object>>>;

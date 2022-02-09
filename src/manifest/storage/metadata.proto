@@ -12,16 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+syntax = "proto3";
+
+package engula.storage.v1.manifest.metadata;
+
 message VersionEdit {
-	map<string, bytes> put_meta = 1;
-	repeated string remove_meta = 2;
 	repeated string add_buckets = 3;
 	repeated string remove_buckets = 4;
 	map<string, BucketUpdate> update_buckets = 5;
 }
 
 message BucketUpdate {
-	map<string, bytes> add_objects = 1;
-	repeated string remove_objects = 2;
+	repeated NewBlob add_blobs = 1;
+	repeated DeleteBlob delete_blobs = 2;
+}
+
+message NewBlob {
+	string blob = 2;
+	int32 level = 3;
+	BlobStats stats = 4;
+}
+
+message BlobStats {
+	bytes smallest = 1;
+	bytes largest = 2;
+	uint64 smallest_sequence = 3;
+	uint64 largest_sequence = 4;
+	int64 object_num = 5;
+	int64 deletion_num = 6;
+}
+
+message DeleteBlob {
+	string blob = 2;
+	int32 level = 3;
+}
+
+message VersionEditList {
+	repeated VersionEdit versions = 1;
 }
 

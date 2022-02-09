@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use prost::DecodeError;
 use thiserror::Error;
 
 /// Errors for all storage operations.
@@ -48,6 +49,12 @@ impl From<tonic::transport::Error> for Error {
 
 impl From<tonic::codegen::http::uri::InvalidUri> for Error {
     fn from(e: tonic::codegen::http::uri::InvalidUri) -> Self {
+        Error::Unknown(Box::new(e))
+    }
+}
+
+impl From<DecodeError> for Error {
+    fn from(e: DecodeError) -> Self {
         Error::Unknown(Box::new(e))
     }
 }

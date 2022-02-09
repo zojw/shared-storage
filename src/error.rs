@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use thiserror::Error;
-use tonic::{Code, Status};
 
 /// Errors for all storage operations.
 #[derive(Error, Debug)]
@@ -25,7 +24,42 @@ pub enum Error {
     #[error("{0}")]
     InvalidArgument(String),
     #[error(transparent)]
-    Io(#[from] std::io::Error),
-    #[error(transparent)]
-    Unknown(Box<dyn std::error::Error + Sync + Send + 'static>),
+    Unknown(Box<dyn std::error::Error + Send>),
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+impl From<tonic::Status> for Error {
+    fn from(s: tonic::Status) -> Self {
+        match s.code() {
+            tonic::Code::NotFound => Error::NotFound(s.message().into()),
+            tonic::Code::AlreadyExists => Error::AlreadyExists(s.message().into()),
+            tonic::Code::InvalidArgument => Error::InvalidArgument(s.message().into()),
+            _ => Error::Unknown(Box::new(s)),
+        }
+    }
+}
+
+impl From<tonic::transport::Error> for Error {
+    fn from(e: tonic::transport::Error) -> Self {
+        Error::Unknown(Box::new(e))
+    }
+}
+
+impl From<tonic::codegen::http::uri::InvalidUri> for Error {
+    fn from(e: tonic::codegen::http::uri::InvalidUri) -> Self {
+        Error::Unknown(Box::new(e))
+    }
+}
+
+impl From<Error> for tonic::Status {
+    fn from(err: Error) -> Self {
+        let (code, message) = match err {
+            Error::NotFound(s) => (tonic::Code::NotFound, s),
+            Error::AlreadyExists(s) => (tonic::Code::AlreadyExists, s),
+            Error::InvalidArgument(s) => (tonic::Code::InvalidArgument, s),
+            Error::Unknown(s) => (tonic::Code::Unknown, s.to_string()),
+        };
+        tonic::Status::new(code, message)
+    }
 }

@@ -29,7 +29,7 @@ use tonic::transport::server::Connected;
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
+    use crate::error::Result;
     use tonic::transport::{Channel, Endpoint, Server, Uri};
 
     use super::{

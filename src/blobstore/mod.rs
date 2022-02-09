@@ -15,7 +15,7 @@
 mod mock;
 mod s3;
 
-use anyhow::Result;
+use crate::error::Result;
 use async_trait::async_trait;
 pub use mock::MemBlobStore as MockBlobStore;
 

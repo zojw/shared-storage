@@ -6,7 +6,6 @@ license = "Apache-2.0"
 
 [dependencies]
 async-trait = "0.1"
-anyhow = "1.0.52"
 prost = "0.9"
 tokio = { version = "1.13", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["net"] }

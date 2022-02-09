@@ -33,8 +33,7 @@ impl apipb::writer_server::Writer for BlobStoreWriter {
         let inner = request.get_ref();
         self.blob_store
             .put_object(&inner.bucket, &inner.object, inner.content.to_owned())
-            .await
-            .unwrap(); // FIXME...
+            .await?;
         Ok(Response::new(apipb::WriteResponse {}))
     }
 }

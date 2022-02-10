@@ -17,12 +17,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &[
             "src/client/api.proto",
             "src/manifest/storage/metadata.proto",
+            "src/manifest/manifest.proto",
+            "src/cache/cache.proto",
         ],
-        &["src/client", "src/manifest/storage"],
+        &[
+            "src/client",
+            "src/manifest/storage",
+            "src/manifest",
+            "src/cache",
+        ],
     )?;
-    // tonic_build::compile_protos("src/client/api.proto")?;
-    tonic_build::compile_protos("src/manifest/manifest.proto")?;
-    // tonic_build::compile_protos("src/manifest/storage/metadata.proto")?;
-    tonic_build::compile_protos("src/cache/cache.proto")?;
     Ok(())
 }

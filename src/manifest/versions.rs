@@ -52,6 +52,10 @@ impl Default for Version {
 }
 
 impl Version {
+    pub fn get_stage(&self, token: &str) -> Option<StagingOperation> {
+        self.staging_op.get(token).map(|t| t.to_owned())
+    }
+
     fn apply(&self, ve: VersionEdit) -> Arc<Version> {
         let mut n = self.clone();
 

@@ -17,8 +17,8 @@ use tonic::{Request, Response, Status};
 
 use super::{storage, versions::VersionSet};
 use crate::{
-    client::apipb::{self, PrepareUploadResponse},
-    manifest::storage::{StagingBlob, StagingOperation, VersionEdit},
+    client::apipb::{self, FinishUploadResponse, PrepareUploadResponse},
+    manifest::storage::{NewBlob, StagingBlob, StagingOperation, VersionEdit},
 };
 
 pub struct BlobControl<S>
@@ -54,7 +54,7 @@ where
             .map(|b| StagingBlob {
                 bucket: b.bucket.to_owned(),
                 blob: b.blob.to_owned(),
-                stats: b.stats.to_owned(),
+                desc: Some(b.to_owned()),
             })
             .collect();
         let locs = vec![]; // TODO: give a writable location.
@@ -66,6 +66,7 @@ where
             add_bucket: vec![],
             add_blob: blobs,
         };
+
         self.version_set
             .log_and_apply(vec![VersionEdit {
                 add_buckets: vec![],
@@ -76,6 +77,7 @@ where
                 remove_staging: vec![],
             }])
             .await?;
+
         Ok(Response::new(PrepareUploadResponse {
             upload_token: token.to_string(), // TODO..
             locations: vec![],
@@ -86,7 +88,27 @@ where
         &self,
         request: Request<apipb::FinishUploadRequest>,
     ) -> Result<Response<apipb::FinishUploadResponse>, Status> {
-        todo!()
+        let token = request.get_ref().upload_token.to_owned();
+        let current = self.version_set.current_version().await;
+        let op = current.get_stage(&token).unwrap();
+        let add_blobs: Vec<NewBlob> = op
+            .add_blob
+            .iter()
+            .map(|ab| ab.desc.as_ref().unwrap().to_owned())
+            .collect();
+
+        self.version_set
+            .log_and_apply(vec![VersionEdit {
+                add_buckets: vec![],
+                remove_buckets: vec![],
+                add_blobs,
+                remove_blobs: vec![],
+                add_staging: vec![],
+                remove_staging: vec![token.to_owned()],
+            }])
+            .await?;
+
+        Ok(Response::new(FinishUploadResponse {}))
     }
 
     async fn rollback_upload(

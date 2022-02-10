@@ -33,7 +33,7 @@ message StagingBucket {
 message StagingBlob {
 	string bucket = 1;
 	string blob = 2;
-	BlobStats stats = 3;
+	NewBlob desc = 3;
 }
 
 message StagingOperation {

@@ -63,10 +63,8 @@ mod tests {
                 level: 0,
                 smallest: b"1".to_vec(),
             }],
-            add_staging_buckets: vec![],
-            remove_staging_buckets: vec![],
-            add_staging_blobs: vec![],
-            remove_staging_blobs: vec![],
+            add_staging: vec![],
+            remove_staging: vec![],
         })
         .await?;
 

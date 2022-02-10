@@ -22,10 +22,26 @@ message VersionEdit {
 	repeated NewBlob add_blobs = 3;
 	repeated DeleteBlob remove_blobs = 4;
 
-	repeated string add_staging_buckets = 5;
-	repeated string remove_staging_buckets = 6;
-	repeated NewBlob add_staging_blobs = 7;
-	repeated DeleteBlob remove_staging_blobs = 8;
+	repeated StagingOperation add_staging = 5;
+	repeated string remove_staging = 6;
+}
+
+message StagingBucket {
+	string bucket = 1;
+}
+
+message StagingBlob {
+	string bucket = 1;
+	string blob = 2;
+	BlobStats stats = 3;
+}
+
+message StagingOperation {
+	string token = 1;
+	uint64 deadline_ts = 2;
+	repeated string locations = 3;
+	repeated StagingBucket add_bucket = 4;
+	repeated StagingBlob   add_blob = 5;
 }
 
 message NewBlob {

@@ -17,27 +17,3 @@ use async_trait::async_trait;
 use crate::client::apipb;
 
 pub struct Server {}
-
-#[async_trait]
-impl apipb::blob_upload_control_server::BlobUploadControl for Server {
-    async fn prepare_upload(
-        &self,
-        request: tonic::Request<apipb::PrepareUploadRequest>,
-    ) -> Result<tonic::Response<apipb::PrepareUploadResponse>, tonic::Status> {
-        todo!()
-    }
-
-    async fn finish_upload(
-        &self,
-        request: tonic::Request<apipb::FinishUploadRequest>,
-    ) -> Result<tonic::Response<apipb::FinishUploadResponse>, tonic::Status> {
-        todo!()
-    }
-
-    async fn rollback_upload(
-        &self,
-        request: tonic::Request<apipb::RollbackUploadRequest>,
-    ) -> Result<tonic::Response<apipb::RollbackUploadResponse>, tonic::Status> {
-        todo!()
-    }
-}

@@ -13,12 +13,8 @@
 // limitations under the License.
 
 use std::{
-    borrow::BorrowMut,
-    collections::{hash_map, BTreeMap, HashMap, HashSet},
-    hash::Hash,
-    ops::Add,
+    collections::{hash_map, BTreeMap, HashMap},
     sync::Arc,
-    time::Duration,
 };
 
 use tokio::{sync::Mutex, time::Instant};
@@ -26,24 +22,23 @@ use tokio::{sync::Mutex, time::Instant};
 use super::storage::MetaStorage;
 use crate::{
     error::Result,
-    manifest::storage::{BlobStats, VersionEdit},
+    manifest::storage::{BlobStats, StagingOperation, VersionEdit},
 };
 
 #[derive(Clone)]
 struct BlobDesc {}
 
 #[derive(Clone)]
-struct StageDesc {
+pub struct StageDesc {
     deadline: Instant,
     locations: Vec<String>,
 }
 
 #[derive(Clone)]
-struct Version {
+pub struct Version {
     buckets: HashMap<String, HashMap<String, BlobDesc>>, // {bucket, blob} -> desc
     levels: HashMap<String, BTreeMap<Vec<u8>, BlobDesc>>, // {bucket, smallest_key} -> desc
-    staging_buckets: HashMap<String, StageDesc>,
-    staging_blobs: HashMap<String, HashMap<String, StageDesc>>,
+    staging_op: BTreeMap<String, StagingOperation>,      // token -> operation
 }
 
 impl Default for Version {
@@ -51,8 +46,7 @@ impl Default for Version {
         Self {
             buckets: HashMap::new(),
             levels: HashMap::new(),
-            staging_buckets: HashMap::new(),
-            staging_blobs: HashMap::new(),
+            staging_op: BTreeMap::new(),
         }
     }
 }
@@ -60,20 +54,6 @@ impl Default for Version {
 impl Version {
     fn apply(&self, ve: VersionEdit) -> Arc<Version> {
         let mut n = self.clone();
-        let deadline = Instant::now().add(Duration::from_secs(3600)); // TODO: fix make it configurable.
-
-        for bucket in ve.add_staging_buckets {
-            n.staging_buckets.insert(
-                bucket.to_owned(),
-                StageDesc {
-                    deadline,
-                    locations: vec![],
-                },
-            );
-        }
-        for bucket in ve.remove_staging_buckets {
-            n.staging_buckets.remove(&bucket);
-        }
 
         for add_bucket in ve.add_buckets {
             match n.buckets.entry(add_bucket.to_owned()) {
@@ -113,27 +93,11 @@ impl Version {
             }
         }
 
-        for blob in ve.add_staging_blobs {
-            match n.staging_blobs.entry(blob.bucket.to_owned()) {
-                hash_map::Entry::Vacant(ent) => {
-                    ent.insert(HashMap::new());
-                }
-                hash_map::Entry::Occupied(_) => {}
-            }
-            if let Some(buckets) = n.staging_blobs.get_mut(&blob.bucket) {
-                buckets.insert(
-                    blob.blob.to_owned(),
-                    StageDesc {
-                        deadline,
-                        locations: vec![],
-                    },
-                );
-            }
+        for stg in ve.add_staging {
+            n.staging_op.insert(stg.token.to_owned(), stg);
         }
-        for blob in ve.remove_staging_blobs {
-            if let Some(buckets) = n.staging_blobs.get_mut(&blob.bucket) {
-                buckets.remove(&blob.blob);
-            }
+        for token in ve.remove_staging {
+            n.staging_op.remove(&token);
         }
 
         Arc::new(n)
@@ -167,8 +131,12 @@ where
 
         let ves = self.meta_store.read_all().await?;
         let mut new_version = Arc::new(Version::default());
-        for ve in &ves {
-            new_version = new_version.apply(ve.clone());
+        if ves.is_empty() {
+            for ve in &ves {
+                new_version = new_version.apply(ve.clone());
+                vs.push(Arc::new(new_version.as_ref().clone()))
+            }
+        } else {
             vs.push(Arc::new(new_version.as_ref().clone()))
         }
 

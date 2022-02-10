@@ -24,6 +24,7 @@ pub mod manifestpb {
 
 pub use blobctrl::BlobControl;
 pub use locator::CacheServerLocator;
+pub use versions::VersionSet;
 
 #[cfg(test)]
 mod tests {

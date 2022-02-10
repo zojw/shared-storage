@@ -41,7 +41,8 @@ service Reader {
 // Default impl by manifest-server's server-side
 // Client-side should cache it to support locate complex expression like: a < 1 and b > 1 or c < 1
 service Locator {
-	rpc LocateKeys(LocateRequest) returns (LocateResponse) {}
+	rpc LocateForRead(LocateRequest) returns (LocateResponse) {}
+	rpc LocateForCompact(LocateRequest) returns (LocateResponse) {}
 }
 
 message QueryRequest {
@@ -66,18 +67,26 @@ message Value {
 	}
 }
 
+message KeyRange {
+	string bucket = 1;
+	bytes start = 2;
+	bytes end = 3;
+}
+
 message LocateRequest {
-	repeated bytes keys = 1;
+	repeated KeyRange ranges = 1;
 }
 
 message LocateResponse {
-	repeated KeyLocation locations = 1;
+	repeated Location locations = 1;
 }
 
-message KeyLocation {
-	bytes start = 1;
-	bytes end  = 2;
-	uint64 store = 3;
+message Location {
+	KeyRange range = 1;
+	string bucket = 2;
+	string blob = 3;
+	uint64 store = 4;
+	uint32 level = 5;
 }
 
 message PrepareUploadRequest {

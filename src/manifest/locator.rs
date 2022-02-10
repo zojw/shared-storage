@@ -13,23 +13,37 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use tonic::{Request, Response, Status};
+use tonic::Response;
 
-use crate::client::apipb::{self, KeyLocation, LocateRequest, LocateResponse};
+use super::{storage::MetaStorage, VersionSet};
+use crate::client::apipb;
 
-pub struct CacheServerLocator {}
+pub struct CacheServerLocator<S>
+where
+    S: MetaStorage,
+{
+    version_set: VersionSet<S>,
+}
 
 #[async_trait]
-impl apipb::locator_server::Locator for CacheServerLocator {
-    async fn locate_keys(
+impl<S> apipb::locator_server::Locator for CacheServerLocator<S>
+where
+    S: MetaStorage + Sync + Send + 'static,
+{
+    async fn locate_for_read(
         &self,
-        _request: Request<LocateRequest>,
-    ) -> Result<Response<LocateResponse>, Status> {
-        let locations = vec![KeyLocation {
-            start: b"1".to_vec(),
-            end: b"3".to_vec(),
-            store: 1,
-        }];
-        Ok(Response::new(LocateResponse { locations }))
+        request: tonic::Request<apipb::LocateRequest>,
+    ) -> Result<tonic::Response<apipb::LocateResponse>, tonic::Status> {
+        let ranges = request.get_ref().ranges.to_owned();
+        let current = self.version_set.current_version().await;
+        let locations = current.get_location(ranges).await;
+        Ok(Response::new(apipb::LocateResponse { locations }))
+    }
+
+    async fn locate_for_compact(
+        &self,
+        request: tonic::Request<apipb::LocateRequest>,
+    ) -> Result<tonic::Response<apipb::LocateResponse>, tonic::Status> {
+        todo!()
     }
 }

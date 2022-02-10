@@ -21,6 +21,7 @@ use tokio::{sync::Mutex, time::Instant};
 
 use super::storage::MetaStorage;
 use crate::{
+    client::apipb::{KeyRange, Location},
     error::Result,
     manifest::storage::{BlobStats, StagingOperation, VersionEdit},
 };
@@ -37,8 +38,9 @@ pub struct StageDesc {
 #[derive(Clone)]
 pub struct Version {
     buckets: HashMap<String, HashMap<String, BlobDesc>>, // {bucket, blob} -> desc
-    levels: HashMap<String, BTreeMap<Vec<u8>, BlobDesc>>, // {bucket, smallest_key} -> desc
-    staging_op: BTreeMap<String, StagingOperation>,      // token -> operation
+    levels: HashMap<String, BTreeMap<u32, BTreeMap<Vec<u8>, BlobDesc>>>, /* bucket -> level ->
+                                                          * keys -> desc */
+    staging_op: BTreeMap<String, StagingOperation>, // token -> operation
 }
 
 impl Default for Version {
@@ -52,6 +54,21 @@ impl Default for Version {
 }
 
 impl Version {
+    pub async fn get_location(&self, ranges: Vec<KeyRange>) -> Vec<Location> {
+        let locs = Vec::new();
+        for ran in ranges {
+            let levels = self.levels.get(&ran.bucket).unwrap();
+            for (level, blobs) in levels {
+                if *level == 0 {
+                    todo!()
+                } else {
+                    todo!()
+                }
+            }
+        }
+        locs
+    }
+
     pub fn get_stage(&self, token: &str) -> Option<StagingOperation> {
         self.staging_op.get(token).map(|t| t.to_owned())
     }

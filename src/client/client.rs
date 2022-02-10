@@ -21,7 +21,7 @@ use super::{
     apipb::{
         self, blob_upload_control_client::BlobUploadControlClient,
         blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
-        reader_client::ReaderClient, PrepareUploadResponse, WriteLocation,
+        reader_client::ReaderClient, KeyRange, PrepareUploadResponse, WriteLocation,
     },
     blob_writer::BlobStoreWriter,
     MockStream,
@@ -81,10 +81,14 @@ impl Client {
     pub async fn query(&mut self, _query: apipb::QueryExp) -> Result<Vec<apipb::Object>> {
         // TODO: extract keys from expression.
         let loc_req = Request::new(apipb::LocateRequest {
-            keys: vec![b"1".to_vec()],
+            ranges: vec![KeyRange {
+                bucket: b"b1".to_vec(),
+                start: b"1".to_vec(),
+                end: b"2".to_vec(),
+            }],
         });
         let mut result = Vec::new();
-        let loc_resp = self.locator.locate_keys(loc_req).await?;
+        let loc_resp = self.locator.locate_for_read(loc_req).await?;
         let locations = loc_resp.get_ref().locations.to_owned();
 
         for loc in locations {

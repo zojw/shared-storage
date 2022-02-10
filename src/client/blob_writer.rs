@@ -16,12 +16,12 @@ use async_trait::async_trait;
 use tonic::{Request, Response, Status};
 
 use crate::{
-    blobstore::{BlobStore, MockBlobStore},
+    blobstore::{BlobStore, MemBlobStore},
     client::apipb,
 };
 
 pub struct BlobStoreWriter {
-    pub blob_store: MockBlobStore,
+    pub blob_store: MemBlobStore,
 }
 
 #[async_trait]

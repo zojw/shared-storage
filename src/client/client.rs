@@ -21,30 +21,29 @@ use super::{
     apipb::{
         self, blob_upload_control_client::BlobUploadControlClient,
         blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
-        reader_client::ReaderClient, WriteLocation,
+        reader_client::ReaderClient, PrepareUploadResponse, WriteLocation,
     },
     blob_writer::BlobStoreWriter,
     MockStream,
 };
-use crate::{
-    blobstore::MockBlobStore,
-    error::Result,
-    manifest::storage::{BlobStats, NewBlob},
-};
+use crate::{blobstore::MemBlobStore, error::Result, manifest::storage::NewBlob};
 
 pub struct Client {
     blob_controller: BlobUploadControlClient<Channel>,
     locator: LocatorClient<Channel>,
+    blob_store: MemBlobStore,
 }
 
 impl Client {
     pub fn new(
         blob_controller: BlobUploadControlClient<Channel>,
         locator: LocatorClient<Channel>,
+        blob_store: MemBlobStore,
     ) -> Self {
         Self {
             blob_controller,
             locator,
+            blob_store,
         }
     }
 
@@ -59,8 +58,10 @@ impl Client {
         };
         let prep = Request::new(apipb::PrepareUploadRequest { blobs: vec![blob] });
         let resp = self.blob_controller.prepare_upload(prep).await?;
-        let upload_token = resp.get_ref().upload_token.to_owned();
-        let locations = resp.get_ref().locations.to_owned();
+        let PrepareUploadResponse {
+            upload_token,
+            locations,
+        } = resp.get_ref().to_owned();
 
         // upload blob data.
         let up = Request::new(apipb::BlobRequest {
@@ -100,12 +101,13 @@ impl Client {
 
     pub async fn get_uploader(&self, _loc: &WriteLocation) -> Result<BlobUploaderClient<Channel>> {
         // TODO: use real instead of mock one
-        Self::build_local_blob_writer().await
+        Self::build_local_blob_writer(self.blob_store.clone()).await
     }
 
-    async fn build_local_blob_writer() -> Result<BlobUploaderClient<Channel>> {
+    async fn build_local_blob_writer(
+        blob_store: MemBlobStore,
+    ) -> Result<BlobUploaderClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
-        let blob_store = MockBlobStore::default();
         let blob_writer = BlobStoreWriter { blob_store };
         tokio::spawn(async move {
             Server::builder()

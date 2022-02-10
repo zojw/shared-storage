@@ -38,15 +38,19 @@ mod tests {
         MockStream,
     };
     use crate::{
+        blobstore::MemBlobStore,
         client::{apipb, client::Client},
         error::Result,
+        manifest::storage::MemBlobMetaStore,
     };
 
     #[tokio::test]
     async fn it_works() -> Result<()> {
-        let blob_control = build_blob_control().await?;
+        let bs = MemBlobStore::default();
+        let s = MemBlobMetaStore::new(bs.clone()).await?;
+        let blob_control = build_blob_control(s).await?;
         let manifest_locator = build_manifest_locator().await?;
-        let mut client = Client::new(blob_control, manifest_locator);
+        let mut client = Client::new(blob_control, manifest_locator, bs);
         client.flush("b1", "o1", b"abc".to_vec()).await?;
         let res = client.query(apipb::QueryExp {}).await?;
         assert_eq!(res.len(), 1);
@@ -75,9 +79,11 @@ mod tests {
         Ok(client)
     }
 
-    async fn build_blob_control() -> Result<BlobUploadControlClient<Channel>> {
+    async fn build_blob_control(
+        meta_store: MemBlobMetaStore<MemBlobStore>,
+    ) -> Result<BlobUploadControlClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
-        let cache_server = crate::manifest::Server {};
+        let cache_server = crate::manifest::BlobControl::new(meta_store);
         tokio::spawn(async move {
             Server::builder()
                 .add_service(

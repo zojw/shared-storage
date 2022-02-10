@@ -25,14 +25,15 @@ use crate::error::{Error, Result};
 type Object = Arc<Vec<u8>>;
 type Bucket = Arc<Mutex<HashMap<String, Object>>>;
 
+#[derive(Clone)]
 pub struct MemBlobStore {
-    buckets: Mutex<HashMap<String, Bucket>>,
+    buckets: Arc<Mutex<HashMap<String, Bucket>>>,
 }
 
 impl Default for MemBlobStore {
     fn default() -> Self {
         Self {
-            buckets: Mutex::new(HashMap::new()),
+            buckets: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 }

@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod blobctrl;
 mod bucket;
 mod locator;
-mod server;
 pub mod storage;
+mod versions;
 
 pub mod manifestpb {
     tonic::include_proto!("engula.storage.v1.manifest");
 }
 
+pub use blobctrl::BlobControl;
 pub use locator::CacheServerLocator;
-pub use server::Server;
 
 #[cfg(test)]
 mod tests {

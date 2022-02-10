@@ -20,7 +20,12 @@ message VersionEdit {
 	repeated string add_buckets = 1;
 	repeated string remove_buckets = 2;
 	repeated NewBlob add_blobs = 3;
-	repeated DeleteBlob delete_blobs = 4;
+	repeated DeleteBlob remove_blobs = 4;
+
+	repeated string add_staging_buckets = 5;
+	repeated string remove_staging_buckets = 6;
+	repeated NewBlob add_staging_blobs = 7;
+	repeated DeleteBlob remove_staging_blobs = 8;
 }
 
 message NewBlob {
@@ -42,7 +47,8 @@ message BlobStats {
 message DeleteBlob {
 	string bucket = 1;
 	string blob = 2;
-	int32 level = 3;
+	uint32 level = 3;
+	bytes smallest = 4;
 }
 
 message VersionEditList {

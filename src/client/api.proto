@@ -31,41 +31,6 @@ service BlobUploadControl {
 	rpc RollbackUpload(RollbackUploadRequest) returns (RollbackUploadResponse) {}
 }
 
-message PrepareUploadRequest {
-	repeated engula.storage.v1.manifest.storage.NewBlob blobs = 1;
-}
-
-message PrepareUploadResponse {
-	string upload_token = 1;
-	repeated WriteLocation locations = 2;
-}
-
-message WriteLocation {
-	string bucket = 1;
-	string blob = 2;
-	string store = 3;
-}
-
-message FinishUploadRequest {
-	string upload_token = 1;
-}
-
-message FinishUploadResponse {}
-
-message RollbackUploadRequest {
-	string upload_token = 1;
-}
-
-message RollbackUploadResponse {}
-
-message BlobRequest {
-	string bucket = 1;
-	string object = 2;
-	bytes content = 3;
-}
-
-message BlobResponse {}
-
 // Read objects from store.
 // Default impl by cache-server's server-side to read from its local cache storage.
 service Reader {
@@ -101,7 +66,6 @@ message Value {
 	}
 }
 
-
 message LocateRequest {
 	repeated bytes keys = 1;
 }
@@ -115,3 +79,38 @@ message KeyLocation {
 	bytes end  = 2;
 	uint64 store = 3;
 }
+
+message PrepareUploadRequest {
+	repeated engula.storage.v1.manifest.storage.NewBlob blobs = 1;
+}
+
+message PrepareUploadResponse {
+	string upload_token = 1;
+	repeated WriteLocation locations = 2;
+}
+
+message WriteLocation {
+	string bucket = 1;
+	string blob = 2;
+	string store = 3;
+}
+
+message FinishUploadRequest {
+	string upload_token = 1;
+}
+
+message FinishUploadResponse {}
+
+message RollbackUploadRequest {
+	string upload_token = 1;
+}
+
+message RollbackUploadResponse {}
+
+message BlobRequest {
+	string bucket = 1;
+	string object = 2;
+	bytes content = 3;
+}
+
+message BlobResponse {}

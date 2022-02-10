@@ -18,10 +18,12 @@ use crate::error::Result;
 
 mod memblob;
 
+pub use memblob::MemBlobMetaStore;
+
 tonic::include_proto!("engula.storage.v1.manifest.storage");
 
 #[async_trait]
-trait MetaStorage {
+pub trait MetaStorage {
     async fn append(&self, ve: VersionEdit) -> Result<()>;
 
     async fn read_all(&self) -> Result<Vec<VersionEdit>>;
@@ -30,16 +32,14 @@ trait MetaStorage {
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
-
     use super::{
         memblob::MemBlobMetaStore, BlobStats, DeleteBlob, MetaStorage, NewBlob, VersionEdit,
     };
-    use crate::{blobstore::MockBlobStore, error::Result};
+    use crate::{blobstore::MemBlobStore, error::Result};
 
     #[tokio::test]
     async fn it_works() -> Result<()> {
-        let bs = MockBlobStore::default();
+        let bs = MemBlobStore::default();
         let s = MemBlobMetaStore::new(bs).await?;
         s.append(VersionEdit {
             add_buckets: vec!["b1".to_owned(), "b2".to_owned()],
@@ -57,11 +57,16 @@ mod tests {
                     deletion_num: 0,
                 }),
             }],
-            delete_blobs: vec![DeleteBlob {
+            remove_blobs: vec![DeleteBlob {
                 bucket: "b1".to_owned(),
                 blob: "o2".to_owned(),
                 level: 0,
+                smallest: b"1".to_vec(),
             }],
+            add_staging_buckets: vec![],
+            remove_staging_buckets: vec![],
+            add_staging_blobs: vec![],
+            remove_staging_blobs: vec![],
         })
         .await?;
 

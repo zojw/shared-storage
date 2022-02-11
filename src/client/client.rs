@@ -49,7 +49,7 @@ impl Client {
 
     pub async fn flush(&mut self, bucket: &str, object: &str, content: Vec<u8>) -> Result<()> {
         // prepare blob updload.
-        let base_level: i32 = 0; // TODO: smart choose base level.
+        let base_level: u32 = 0; // TODO: smart choose base level.
         let blob = NewBlob {
             bucket: bucket.to_owned(),
             blob: object.to_owned(),
@@ -82,7 +82,7 @@ impl Client {
         // TODO: extract keys from expression.
         let loc_req = Request::new(apipb::LocateRequest {
             ranges: vec![KeyRange {
-                bucket: b"b1".to_vec(),
+                bucket: "b1".to_string(),
                 start: b"1".to_vec(),
                 end: b"2".to_vec(),
             }],

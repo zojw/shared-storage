@@ -47,7 +47,7 @@ message StagingOperation {
 message NewBlob {
 	string bucket = 1;
 	string blob = 2;
-	int32 level = 3;
+	uint32 level = 3;
 	BlobStats stats = 4;
 }
 

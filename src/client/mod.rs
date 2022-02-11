@@ -29,6 +29,8 @@ use tonic::transport::server::Connected;
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use tonic::transport::{Channel, Endpoint, Server, Uri};
 
     use super::{
@@ -41,16 +43,16 @@ mod tests {
         blobstore::MemBlobStore,
         client::{apipb, client::Client},
         error::Result,
-        manifest::storage::MemBlobMetaStore,
+        manifest::{storage::MemBlobMetaStore, VersionSet},
     };
 
     #[tokio::test]
     async fn it_works() -> Result<()> {
         let blob_store = MemBlobStore::default();
         let meta_store = MemBlobMetaStore::new(blob_store.clone()).await?;
-        let version_set = crate::manifest::VersionSet::new(meta_store).await?;
-        let blob_control = build_blob_control(version_set).await?;
-        let manifest_locator = build_manifest_locator().await?;
+        let version_set = Arc::new(VersionSet::new(meta_store).await?);
+        let blob_control = build_blob_control(version_set.clone()).await?;
+        let manifest_locator = build_manifest_locator(version_set.clone()).await?;
         let mut client = Client::new(blob_control, manifest_locator, blob_store);
         client.flush("b1", "o1", b"abc".to_vec()).await?;
         let res = client.query(apipb::QueryExp {}).await?;
@@ -58,9 +60,11 @@ mod tests {
         Ok(())
     }
 
-    async fn build_manifest_locator() -> Result<LocatorClient<Channel>> {
+    async fn build_manifest_locator(
+        vs: Arc<VersionSet<MemBlobMetaStore<MemBlobStore>>>,
+    ) -> Result<LocatorClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
-        let locator = crate::manifest::CacheServerLocator {};
+        let locator = crate::manifest::CacheServerLocator::new(vs);
         tokio::spawn(async move {
             Server::builder()
                 .add_service(apipb::locator_server::LocatorServer::new(locator))
@@ -81,7 +85,7 @@ mod tests {
     }
 
     async fn build_blob_control(
-        vs: crate::manifest::VersionSet<MemBlobMetaStore<MemBlobStore>>,
+        vs: Arc<VersionSet<MemBlobMetaStore<MemBlobStore>>>,
     ) -> Result<BlobUploadControlClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
         let cache_server = crate::manifest::BlobControl::new(vs);

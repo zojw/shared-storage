@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use tonic::Response;
 
@@ -22,7 +24,16 @@ pub struct CacheServerLocator<S>
 where
     S: MetaStorage,
 {
-    version_set: VersionSet<S>,
+    version_set: Arc<VersionSet<S>>,
+}
+
+impl<S> CacheServerLocator<S>
+where
+    S: MetaStorage,
+{
+    pub fn new(version_set: Arc<VersionSet<S>>) -> Self {
+        Self { version_set }
+    }
 }
 
 #[async_trait]

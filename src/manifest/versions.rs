@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use std::{
-    collections::{hash_map, BTreeMap, HashMap},
+    collections::{btree_map, hash_map, BTreeMap, HashMap},
     sync::Arc,
 };
 
@@ -23,7 +23,7 @@ use super::storage::MetaStorage;
 use crate::{
     client::apipb::{KeyRange, Location},
     error::Result,
-    manifest::storage::{BlobStats, StagingOperation, VersionEdit},
+    manifest::storage::{StagingOperation, VersionEdit},
 };
 
 #[derive(Clone)]
@@ -37,10 +37,12 @@ pub struct StageDesc {
 
 #[derive(Clone)]
 pub struct Version {
-    buckets: HashMap<String, HashMap<String, BlobDesc>>, // {bucket, blob} -> desc
-    levels: HashMap<String, BTreeMap<u32, BTreeMap<Vec<u8>, BlobDesc>>>, /* bucket -> level ->
-                                                          * keys -> desc */
-    staging_op: BTreeMap<String, StagingOperation>, // token -> operation
+    // bucket -> { blob -> blob-desc }
+    buckets: HashMap<String, HashMap<String, BlobDesc>>,
+    // bucket -> { level -> { smallest-key -> blob-desc } }
+    levels: HashMap<String, BTreeMap<u32, BTreeMap<Vec<u8>, BlobDesc>>>,
+    // token -> stage-operation
+    staging_op: BTreeMap<String, StagingOperation>,
 }
 
 impl Default for Version {
@@ -100,8 +102,15 @@ impl Version {
                 buckets.insert(new_blob.blob.to_owned(), BlobDesc {});
             }
             if let Some(levels) = n.levels.get_mut(&new_blob.bucket) {
-                if let Some(BlobStats { smallest, .. }) = new_blob.stats {
-                    levels.insert(smallest, BlobDesc {});
+                match levels.entry(new_blob.level) {
+                    btree_map::Entry::Vacant(ent) => {
+                        ent.insert(BTreeMap::new());
+                    }
+                    btree_map::Entry::Occupied(_) => {}
+                }
+                let blobs_in_level = levels.get_mut(&new_blob.level).unwrap();
+                if let Some(stats) = new_blob.stats {
+                    blobs_in_level.insert(stats.smallest.to_owned(), BlobDesc {});
                 }
             }
         }
@@ -110,7 +119,9 @@ impl Version {
                 buckets.remove(&del_blob.blob);
             }
             if let Some(levels) = n.levels.get_mut(&del_blob.bucket) {
-                levels.insert(del_blob.smallest, BlobDesc {});
+                if let Some(blobs_in_level) = levels.get_mut(&del_blob.level) {
+                    blobs_in_level.remove(&del_blob.smallest);
+                }
             }
         }
 

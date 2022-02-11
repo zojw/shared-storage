@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use tonic::{
-    transport::{Channel, Endpoint, Server, Uri},
-    Request,
-};
+use tonic::{transport::Channel, Request};
 
-use super::{
-    apipb::{
-        self, blob_upload_control_client::BlobUploadControlClient,
-        blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
-        reader_client::ReaderClient, KeyRange, Location, PrepareUploadResponse,
-    },
-    MockStream,
+use super::apipb::{
+    self, blob_upload_control_client::BlobUploadControlClient,
+    blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
+    reader_client::ReaderClient, KeyRange, Location, PrepareUploadResponse,
 };
 use crate::{error::Result, manifest::storage::NewBlob};
 

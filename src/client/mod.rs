@@ -18,27 +18,21 @@ pub mod apipb {
     tonic::include_proto!("engula.storage.v1.client.api");
 }
 
-use std::{
-    pin::Pin,
-    task::{Context, Poll},
-};
-
-use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
-use tonic::transport::server::Connected;
-
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::{
+        pin::Pin,
+        sync::Arc,
+        task::{Context, Poll},
+    };
 
-    use tonic::transport::{Channel, Endpoint, Server, Uri};
+    use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+    use tonic::transport::{server::Connected, Channel, Endpoint, Server, Uri};
 
-    use super::{
-        apipb::{
-            blob_upload_control_client::BlobUploadControlClient,
-            blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
-            reader_client::ReaderClient,
-        },
-        MockStream,
+    use super::apipb::{
+        blob_upload_control_client::BlobUploadControlClient,
+        blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
+        reader_client::ReaderClient,
     };
     use crate::{
         blobstore::MemBlobStore,
@@ -60,8 +54,8 @@ mod tests {
         let cache_reader = build_cache_reader().await?;
         let mut client = Client::new(
             blob_control,
-            manifest_locator,
             vec![cache_uploader],
+            manifest_locator,
             vec![cache_reader],
         );
         client.flush("b1", "o1", b"abc".to_vec()).await?;
@@ -169,41 +163,44 @@ mod tests {
         let client = apipb::blob_upload_control_client::BlobUploadControlClient::new(channel);
         Ok(client)
     }
-}
 
-#[derive(Debug)]
-pub struct MockStream(pub tokio::io::DuplexStream);
+    #[derive(Debug)]
+    pub struct MockStream(pub tokio::io::DuplexStream);
 
-impl Connected for MockStream {
-    type ConnectInfo = ();
+    impl Connected for MockStream {
+        type ConnectInfo = ();
 
-    fn connect_info(&self) -> Self::ConnectInfo {}
-}
-
-impl AsyncRead for MockStream {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        Pin::new(&mut self.0).poll_read(cx, buf)
-    }
-}
-
-impl AsyncWrite for MockStream {
-    fn poll_write(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<std::io::Result<usize>> {
-        Pin::new(&mut self.0).poll_write(cx, buf)
+        fn connect_info(&self) -> Self::ConnectInfo {}
     }
 
-    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
-        Pin::new(&mut self.0).poll_flush(cx)
+    impl AsyncRead for MockStream {
+        fn poll_read(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            buf: &mut ReadBuf<'_>,
+        ) -> Poll<std::io::Result<()>> {
+            Pin::new(&mut self.0).poll_read(cx, buf)
+        }
     }
 
-    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
-        Pin::new(&mut self.0).poll_shutdown(cx)
+    impl AsyncWrite for MockStream {
+        fn poll_write(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            buf: &[u8],
+        ) -> Poll<std::io::Result<usize>> {
+            Pin::new(&mut self.0).poll_write(cx, buf)
+        }
+
+        fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
+            Pin::new(&mut self.0).poll_flush(cx)
+        }
+
+        fn poll_shutdown(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+        ) -> Poll<std::io::Result<()>> {
+            Pin::new(&mut self.0).poll_shutdown(cx)
+        }
     }
 }

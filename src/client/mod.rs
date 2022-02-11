@@ -36,6 +36,7 @@ mod tests {
         apipb::{
             blob_upload_control_client::BlobUploadControlClient,
             blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
+            reader_client::ReaderClient,
         },
         MockStream,
     };
@@ -56,7 +57,13 @@ mod tests {
         let blob_control = build_blob_control(version_set.clone()).await?;
         let manifest_locator = build_manifest_locator(version_set.clone()).await?;
         let cache_uploader = build_cache_uploader(local_store, blob_store.clone()).await?;
-        let mut client = Client::new(blob_control, manifest_locator, vec![cache_uploader]);
+        let cache_reader = build_cache_reader().await?;
+        let mut client = Client::new(
+            blob_control,
+            manifest_locator,
+            vec![cache_uploader],
+            vec![cache_reader],
+        );
         client.flush("b1", "o1", b"abc".to_vec()).await?;
         let res = client.query(apipb::QueryExp {}).await?;
         assert_eq!(res.len(), 1);
@@ -88,6 +95,28 @@ mod tests {
             }))
             .await?;
         let client = BlobUploaderClient::new(channel);
+        Ok(client)
+    }
+
+    async fn build_cache_reader() -> Result<ReaderClient<Channel>> {
+        let (client, server) = tokio::io::duplex(1024);
+        let reader = crate::cache::CacheReader {};
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(apipb::reader_server::ReaderServer::new(reader))
+                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
+                    MockStream(server),
+                )]))
+                .await
+        });
+        let mut client = Some(client);
+        let channel = Endpoint::try_from("http://[::]:50053")?
+            .connect_with_connector(tower::service_fn(move |_: Uri| {
+                let client = client.take().unwrap();
+                async move { Ok::<_, std::io::Error>(MockStream(client)) }
+            }))
+            .await?;
+        let client = apipb::reader_client::ReaderClient::new(channel);
         Ok(client)
     }
 

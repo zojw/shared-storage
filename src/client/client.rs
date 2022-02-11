@@ -25,27 +25,27 @@ use super::{
     },
     MockStream,
 };
-use crate::{
-    error::Result,
-    manifest::storage::NewBlob,
-};
+use crate::{error::Result, manifest::storage::NewBlob};
 
 pub struct Client {
     blob_controller: BlobUploadControlClient<Channel>,
-    locator: LocatorClient<Channel>,
     blob_uploaders: Vec<BlobUploaderClient<Channel>>,
+    locator: LocatorClient<Channel>,
+    readers: Vec<ReaderClient<Channel>>,
 }
 
 impl Client {
     pub fn new(
         blob_controller: BlobUploadControlClient<Channel>,
-        locator: LocatorClient<Channel>,
         blob_uploaders: Vec<BlobUploaderClient<Channel>>,
+        locator: LocatorClient<Channel>,
+        readers: Vec<ReaderClient<Channel>>,
     ) -> Self {
         Self {
             blob_controller,
-            locator,
             blob_uploaders,
+            locator,
+            readers,
         }
     }
 
@@ -114,28 +114,6 @@ impl Client {
 
     pub async fn get_reader(&self, _store: u64) -> Result<ReaderClient<Channel>> {
         // TODO: establish & cache reader for store_id.
-        Self::build_cache_reader().await
-    }
-
-    async fn build_cache_reader() -> Result<ReaderClient<Channel>> {
-        let (client, server) = tokio::io::duplex(1024);
-        let reader = crate::cache::CacheReader {};
-        tokio::spawn(async move {
-            Server::builder()
-                .add_service(apipb::reader_server::ReaderServer::new(reader))
-                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
-                    MockStream(server),
-                )]))
-                .await
-        });
-        let mut client = Some(client);
-        let channel = Endpoint::try_from("http://[::]:50053")?
-            .connect_with_connector(tower::service_fn(move |_: Uri| {
-                let client = client.take().unwrap();
-                async move { Ok::<_, std::io::Error>(MockStream(client)) }
-            }))
-            .await?;
-        let client = apipb::reader_client::ReaderClient::new(channel);
-        Ok(client)
+        Ok(self.readers[0].clone())
     }
 }

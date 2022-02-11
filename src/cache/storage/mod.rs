@@ -25,6 +25,7 @@ pub trait CacheStorage {
     async fn delete_bucket(&self, bucket: &str) -> Result<()>;
     async fn list_buckets(&self) -> Result<Vec<String>>;
     async fn list_objects(&self, bucket: &str) -> Result<Vec<String>>;
+    async fn delete_object(&self, bucket_name: &str, object_name: &str) -> Result<()>;
 
     async fn put_object(&self, bucket: &str, object: &str, content: Vec<u8>) -> Result<()>;
     async fn read_object(&self, bucket: &str, object: &str) -> Result<Vec<u8>>;

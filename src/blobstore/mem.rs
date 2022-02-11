@@ -112,4 +112,12 @@ impl super::BlobStore for MemBlobStore {
             Err(Error::NotFound(format!("bucket '{}'", bucket_name)))?
         }
     }
+
+    async fn delete_object(&self, bucket_name: &str, object_name: &str) -> Result<()> {
+        if let Some(bucket) = self.bucket(bucket_name).await {
+            let mut bucket = bucket.lock().await;
+            bucket.remove(object_name);
+        }
+        Ok(())
+    }
 }

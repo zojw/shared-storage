@@ -21,6 +21,8 @@ service BucketService {
 
   rpc DeleteBucket(DeleteBucketRequest) returns (DeleteBucketResponse) {}
 
+  rpc DeleteBlob(DeleteBlobRequest) returns (DeleteBlobResponse) {}
+
   rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
 
   rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
@@ -37,6 +39,10 @@ message CreateBucketResponse {}
 message DeleteBucketRequest { string bucket = 1; }
 
 message DeleteBucketResponse {}
+
+message DeleteBlobRequest { string bucket = 1; string blob = 2; }
+
+message DeleteBlobResponse {}
 
 message ListBucketsRequest {}
 

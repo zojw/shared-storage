@@ -15,14 +15,15 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tonic::{transport::Channel, Request, Response};
+use tonic::{transport::Channel, Request, Response, Status};
 
 use super::{
     manifestpb::{
-        CreateBucketRequest, CreateBucketResponse, DeleteBucketRequest, DeleteBucketResponse,
-        ListBlobsRequest, ListBlobsResponse, ListBucketsRequest, ListBucketsResponse,
+        CreateBucketRequest, CreateBucketResponse, DeleteBlobRequest, DeleteBlobResponse,
+        DeleteBucketRequest, DeleteBucketResponse, ListBlobsRequest, ListBlobsResponse,
+        ListBucketsRequest, ListBucketsResponse,
     },
-    storage::{self, MetaStorage, StagingBucket, StagingOperation, VersionEdit},
+    storage::{self, DeleteBlob, MetaStorage, StagingBucket, StagingOperation, VersionEdit},
     VersionSet,
 };
 use crate::{
@@ -70,7 +71,7 @@ where
     async fn create_bucket(
         &self,
         request: Request<CreateBucketRequest>,
-    ) -> Result<Response<CreateBucketResponse>, tonic::Status> {
+    ) -> Result<Response<CreateBucketResponse>, Status> {
         let bucket_name = request.get_ref().bucket.to_owned();
 
         // prepare create bucket and put log as staging.
@@ -125,7 +126,7 @@ where
     async fn delete_bucket(
         &self,
         request: Request<DeleteBucketRequest>,
-    ) -> Result<Response<DeleteBucketResponse>, tonic::Status> {
+    ) -> Result<Response<DeleteBucketResponse>, Status> {
         let bucket_name = request.get_ref().bucket.to_owned(); // TODO: use id instead of name #6
 
         // Remove bucket from meta first and can return success after this step.
@@ -159,7 +160,7 @@ where
     async fn list_buckets(
         &self,
         _request: Request<ListBucketsRequest>,
-    ) -> Result<Response<ListBucketsResponse>, tonic::Status> {
+    ) -> Result<Response<ListBucketsResponse>, Status> {
         let current = self.version_set.current_version().await;
         let buckets = current.list_buckets();
         Ok(Response::new(ListBucketsResponse { buckets }))
@@ -168,10 +169,54 @@ where
     async fn list_blobs(
         &self,
         request: Request<ListBlobsRequest>,
-    ) -> Result<Response<ListBlobsResponse>, tonic::Status> {
+    ) -> Result<Response<ListBlobsResponse>, Status> {
         let bucket = request.get_ref().bucket.to_owned();
         let current = self.version_set.current_version().await;
         let blobs = current.list_blobs(&bucket);
         Ok(Response::new(ListBlobsResponse { objects: blobs }))
+    }
+
+    async fn delete_blob(
+        &self,
+        request: Request<DeleteBlobRequest>,
+    ) -> Result<Response<DeleteBlobResponse>, Status> {
+        let DeleteBlobRequest { bucket, blob } = &request.get_ref().to_owned();
+
+        let current = self.version_set.current_version().await;
+
+        if let Some(blob_desc) = current.get_blob(&bucket, &blob) {
+            // Remove blob from meta first and can return success after this step.
+            self.version_set
+                .log_and_apply(vec![VersionEdit {
+                    add_buckets: vec![],
+                    remove_buckets: vec![],
+                    add_blobs: vec![],
+                    remove_blobs: vec![DeleteBlob {
+                        bucket: bucket.to_owned(),
+                        blob: blob.to_owned(),
+                        level: blob_desc.level,
+                        smallest: blob_desc.smallest,
+                    }],
+                    add_staging: vec![],
+                    remove_staging: vec![],
+                }])
+                .await?;
+            // TODO: maybe need mantain "ZombieBlob" info to cleanup.
+
+            let _ = {
+                self.blob_store.delete_object(&bucket, &blob).await?;
+
+                for i in 0..self.bucket_in_caches.len() {
+                    let mut cache = self.bucket_in_caches.get(i).unwrap().clone();
+                    let req = Request::new(crate::cache::cachepb::DeleteBlobRequest {
+                        bucket: bucket.to_owned(),
+                        blob: blob.to_owned(),
+                    });
+                    cache.delete_blob(req).await?;
+                }
+            };
+        }
+
+        Ok(Response::new(DeleteBlobResponse {}))
     }
 }

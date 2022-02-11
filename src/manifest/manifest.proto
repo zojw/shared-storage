@@ -19,6 +19,7 @@ package engula.storage.v1.manifest;
 service BucketService {
 	rpc CreateBucket(CreateBucketRequest) returns (CreateBucketResponse) {}
 	rpc DeleteBucket(DeleteBucketRequest) returns (DeleteBucketResponse) {}
+	rpc DeleteBlob(DeleteBlobRequest) returns (DeleteBlobResponse) {}
 	rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
 	rpc ListBlobs(ListBlobsRequest) returns (ListBlobsResponse) {}
 }
@@ -30,6 +31,10 @@ message CreateBucketResponse {}
 message DeleteBucketRequest { string bucket = 1; }
 
 message DeleteBucketResponse {}
+
+message DeleteBlobRequest { string bucket = 1; string blob = 2; }
+
+message DeleteBlobResponse {}
 
 message ListBucketsRequest {}
 

@@ -19,7 +19,7 @@ use std::{
 
 use tokio::{sync::Mutex, time::Instant};
 
-use super::storage::MetaStorage;
+use super::{storage::MetaStorage, BlobControl};
 use crate::{
     client::apipb::{KeyRange, Location},
     error::Result,
@@ -27,7 +27,11 @@ use crate::{
 };
 
 #[derive(Clone)]
-struct BlobDesc {}
+pub struct BlobDesc {
+    pub level: u32,
+    pub smallest: Vec<u8>,
+    pub largest: Vec<u8>,
+}
 
 #[derive(Clone)]
 pub struct StageDesc {
@@ -73,7 +77,7 @@ impl Version {
         }
     }
 
-    pub async fn get_location(&self, ranges: Vec<KeyRange>) -> Vec<Location> {
+    pub fn get_location(&self, ranges: Vec<KeyRange>) -> Vec<Location> {
         // TODO: find location between levels.
         let locs = Vec::new();
         for ran in ranges {
@@ -87,6 +91,15 @@ impl Version {
             }
         }
         locs
+    }
+
+    pub fn get_blob(&self, bucket: &str, blob: &str) -> Option<BlobDesc> {
+        if let Some(blobs) = self.buckets.get(bucket) {
+            if let Some(blob) = blobs.get(blob) {
+                return Some(blob.to_owned());
+            }
+        }
+        None
     }
 
     pub fn get_stage(&self, token: &str) -> Option<StagingOperation> {
@@ -117,7 +130,20 @@ impl Version {
 
         for new_blob in ve.add_blobs {
             if let Some(buckets) = n.buckets.get_mut(&new_blob.bucket) {
-                buckets.insert(new_blob.blob.to_owned(), BlobDesc {});
+                let (smallest, largest) = {
+                    match &new_blob.stats {
+                        Some(stats) => (stats.smallest.to_owned(), stats.largest.to_owned()),
+                        None => (vec![], vec![]),
+                    }
+                };
+                buckets.insert(
+                    new_blob.blob.to_owned(),
+                    BlobDesc {
+                        level: new_blob.level,
+                        smallest,
+                        largest,
+                    },
+                );
             }
             if let Some(levels) = n.levels.get_mut(&new_blob.bucket) {
                 match levels.entry(new_blob.level) {
@@ -128,7 +154,14 @@ impl Version {
                 }
                 let blobs_in_level = levels.get_mut(&new_blob.level).unwrap();
                 if let Some(stats) = new_blob.stats {
-                    blobs_in_level.insert(stats.smallest.to_owned(), BlobDesc {});
+                    blobs_in_level.insert(
+                        stats.smallest.to_owned(),
+                        BlobDesc {
+                            level: new_blob.level,
+                            smallest: stats.smallest,
+                            largest: stats.largest,
+                        },
+                    );
                 }
             }
         }

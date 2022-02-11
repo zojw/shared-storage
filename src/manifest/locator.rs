@@ -47,7 +47,7 @@ where
     ) -> Result<tonic::Response<apipb::LocateResponse>, tonic::Status> {
         let ranges = request.get_ref().ranges.to_owned();
         let current = self.version_set.current_version().await;
-        let locations = current.get_location(ranges).await;
+        let locations = current.get_location(ranges);
         Ok(Response::new(apipb::LocateResponse { locations }))
     }
 

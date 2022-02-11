@@ -56,7 +56,25 @@ impl Default for Version {
 }
 
 impl Version {
+    pub fn list_buckets(&self) -> Vec<String> {
+        self.buckets
+            .iter()
+            .map(|(bucket, _)| bucket.to_owned())
+            .collect::<Vec<String>>()
+    }
+
+    pub fn list_blobs(&self, bucket: &str) -> Vec<String> {
+        match self.buckets.get(bucket) {
+            Some(blobs) => blobs
+                .iter()
+                .map(|(blob, _)| blob.to_owned())
+                .collect::<Vec<String>>(),
+            None => vec![],
+        }
+    }
+
     pub async fn get_location(&self, ranges: Vec<KeyRange>) -> Vec<Location> {
+        // TODO: find location between levels.
         let locs = Vec::new();
         for ran in ranges {
             let levels = self.levels.get(&ran.bucket).unwrap();

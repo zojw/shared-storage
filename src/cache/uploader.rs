@@ -65,6 +65,7 @@ where
             .put_object(&request.bucket, &request.blob, request.content.to_owned())
             .await?;
         if let Some(replica) = &self.replica_cache {
+            // TODO: impl replica chain between cache nodes info that indicated by request.
             replica
                 .put_object(&request.bucket, &request.blob, request.content.to_owned())
                 .await?;

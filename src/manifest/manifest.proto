@@ -20,7 +20,7 @@ service BucketService {
 	rpc CreateBucket(CreateBucketRequest) returns (CreateBucketResponse) {}
 	rpc DeleteBucket(DeleteBucketRequest) returns (DeleteBucketResponse) {}
 	rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
-	rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
+	rpc ListBlobs(ListBlobsRequest) returns (ListBlobsResponse) {}
 }
 
 message CreateBucketRequest { string bucket = 1; }
@@ -35,6 +35,6 @@ message ListBucketsRequest {}
 
 message ListBucketsResponse { repeated string buckets = 1; }
 
-message ListObjectsRequest { string bucket = 1; }
+message ListBlobsRequest { string bucket = 1; }
 
-message ListObjectsResponse { repeated string objects = 1; }
+message ListBlobsResponse { repeated string objects = 1; }

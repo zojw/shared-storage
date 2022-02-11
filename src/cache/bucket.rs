@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use tonic::{Request, Response, Status};
 
@@ -29,14 +31,14 @@ pub struct CacheNodeBucketService<L>
 where
     L: CacheStorage,
 {
-    local_store: L,
+    local_store: Arc<L>,
 }
 
 impl<L> CacheNodeBucketService<L>
 where
     L: CacheStorage,
 {
-    pub fn new(local_store: L) -> Self {
+    pub fn new(local_store: Arc<L>) -> Self {
         Self { local_store }
     }
 }

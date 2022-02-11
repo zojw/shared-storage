@@ -27,7 +27,7 @@ mod tests {
     };
 
     use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
-    use tonic::transport::{server::Connected, Channel, Endpoint, Server, Uri};
+    use tonic::transport::{channel, server::Connected, Channel, Endpoint, Server, Uri};
 
     use super::apipb::{
         blob_upload_control_client::BlobUploadControlClient,
@@ -36,10 +36,20 @@ mod tests {
     };
     use crate::{
         blobstore::MemBlobStore,
-        cache::{MemCacheStore, Uploader},
+        cache::{
+            cachepb::bucket_service_client::BucketServiceClient as CacheBucketServiceClient,
+            MemCacheStore, Uploader,
+        },
         client::{apipb, client::Client},
         error::Result,
-        manifest::{storage::MemBlobMetaStore, VersionSet},
+        manifest::{
+            manifestpb::{
+                bucket_service_client::BucketServiceClient,
+                bucket_service_server::BucketServiceServer,
+            },
+            storage::MemBlobMetaStore,
+            VersionSet,
+        },
     };
 
     #[tokio::test]
@@ -50,17 +60,25 @@ mod tests {
         let version_set = Arc::new(VersionSet::new(meta_store).await?);
         let blob_control = build_blob_control(version_set.clone()).await?;
         let manifest_locator = build_manifest_locator(version_set.clone()).await?;
-        let cache_uploader = build_cache_uploader(local_store, blob_store.clone()).await?;
+        let cache_uploader = build_cache_uploader(local_store.clone(), blob_store.clone()).await?;
         let cache_reader = build_cache_reader().await?;
+        let cache_bucket = build_cache_bucket_mng(local_store.clone()).await?;
+        let bucket_mng =
+            build_manifest_bucket_mng(blob_store.clone(), version_set.clone(), cache_bucket)
+                .await?;
+
         let mut client = Client::new(
             blob_control,
             vec![cache_uploader],
             manifest_locator,
             vec![cache_reader],
+            bucket_mng,
         );
+
+        client.create_bucket("b1").await?;
         client.flush("b1", "o1", b"abc".to_vec()).await?;
-        let res = client.query(apipb::QueryExp {}).await?;
-        assert_eq!(res.len(), 1);
+        // let res = client.query(apipb::QueryExp {}).await?;
+        // assert_eq!(res.len(), 1);
         Ok(())
     }
 
@@ -111,6 +129,59 @@ mod tests {
             }))
             .await?;
         let client = apipb::reader_client::ReaderClient::new(channel);
+        Ok(client)
+    }
+
+    async fn build_manifest_bucket_mng(
+        blob_store: Arc<MemBlobStore>,
+        version_set: Arc<VersionSet<MemBlobMetaStore<MemBlobStore>>>,
+        cache_bucket_mng: CacheBucketServiceClient<Channel>,
+    ) -> Result<BucketServiceClient<Channel>> {
+        let (client, server) = tokio::io::duplex(1024);
+        let svc =
+            crate::manifest::BucketService::new(blob_store, version_set, vec![cache_bucket_mng]);
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(BucketServiceServer::new(svc))
+                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
+                    MockStream(server),
+                )]))
+                .await
+        });
+        let mut client = Some(client);
+        let channel = Endpoint::try_from("http://[::]:50055")?
+            .connect_with_connector(tower::service_fn(move |_: Uri| {
+                let client = client.take().unwrap();
+                async move { Ok::<_, std::io::Error>(MockStream(client)) }
+            }))
+            .await?;
+        let client = BucketServiceClient::new(channel);
+        Ok(client)
+    }
+
+    async fn build_cache_bucket_mng(
+        local: Arc<MemCacheStore>,
+    ) -> Result<CacheBucketServiceClient<Channel>> {
+        let (client, server) = tokio::io::duplex(1024);
+        let svc = crate::cache::CacheNodeBucketService::new(local);
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(
+                    crate::cache::cachepb::bucket_service_server::BucketServiceServer::new(svc),
+                )
+                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
+                    MockStream(server),
+                )]))
+                .await
+        });
+        let mut client = Some(client);
+        let channel = Endpoint::try_from("http://[::]:50055")?
+            .connect_with_connector(tower::service_fn(move |_: Uri| {
+                let client = client.take().unwrap();
+                async move { Ok::<_, std::io::Error>(MockStream(client)) }
+            }))
+            .await?;
+        let client = CacheBucketServiceClient::new(channel);
         Ok(client)
     }
 

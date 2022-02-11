@@ -19,13 +19,20 @@ use super::apipb::{
     blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
     reader_client::ReaderClient, KeyRange, Location, PrepareUploadResponse,
 };
-use crate::{error::Result, manifest::storage::NewBlob};
+use crate::{
+    error::Result,
+    manifest::{
+        manifestpb::{bucket_service_client::BucketServiceClient, CreateBucketRequest},
+        storage::NewBlob,
+    },
+};
 
 pub struct Client {
     blob_controller: BlobUploadControlClient<Channel>,
     blob_uploaders: Vec<BlobUploaderClient<Channel>>,
     locator: LocatorClient<Channel>,
     readers: Vec<ReaderClient<Channel>>,
+    bucket_mng: BucketServiceClient<Channel>,
 }
 
 impl Client {
@@ -34,12 +41,14 @@ impl Client {
         blob_uploaders: Vec<BlobUploaderClient<Channel>>,
         locator: LocatorClient<Channel>,
         readers: Vec<ReaderClient<Channel>>,
+        bucket_mng: BucketServiceClient<Channel>,
     ) -> Self {
         Self {
             blob_controller,
             blob_uploaders,
             locator,
             readers,
+            bucket_mng,
         }
     }
 
@@ -109,5 +118,13 @@ impl Client {
     pub async fn get_reader(&self, _store: u64) -> Result<ReaderClient<Channel>> {
         // TODO: establish & cache reader for store_id.
         Ok(self.readers[0].clone())
+    }
+
+    pub async fn create_bucket(&mut self, bucket_name: &str) -> Result<()> {
+        let req = Request::new(CreateBucketRequest {
+            bucket: bucket_name.to_owned(),
+        });
+        self.bucket_mng.create_bucket(req).await?;
+        Ok(())
     }
 }

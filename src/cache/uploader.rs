@@ -13,27 +13,28 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use tonic::{Request, Response, Status};
 
-use crate::{
-    blobstore::{BlobStore, MemBlobStore},
-    client::apipb,
-};
+use super::cachepb;
+use crate::client::apipb;
 
-pub struct BlobStoreWriter {
-    pub blob_store: MemBlobStore,
+pub struct Uploader {}
+
+#[async_trait]
+impl apipb::blob_uploader_server::BlobUploader for Uploader {
+    async fn upload(
+        &self,
+        request: tonic::Request<apipb::BlobRequest>,
+    ) -> Result<tonic::Response<apipb::BlobResponse>, tonic::Status> {
+        todo!()
+    }
 }
 
 #[async_trait]
-impl apipb::blob_uploader_server::BlobUploader for BlobStoreWriter {
-    async fn upload(
+impl cachepb::cache_node_service_server::CacheNodeService for Uploader {
+    async fn heartbeat(
         &self,
-        request: Request<apipb::BlobRequest>,
-    ) -> Result<Response<apipb::BlobResponse>, Status> {
-        let inner = request.get_ref();
-        self.blob_store
-            .put_object(&inner.bucket, &inner.object, inner.content.to_owned())
-            .await?;
-        Ok(Response::new(apipb::BlobResponse {}))
+        _request: tonic::Request<cachepb::HeartbeatRequest>,
+    ) -> Result<tonic::Response<cachepb::HeartbeatResponse>, tonic::Status> {
+        todo!()
     }
 }

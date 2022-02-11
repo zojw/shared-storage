@@ -17,23 +17,3 @@ use async_trait::async_trait;
 use crate::{cache::cachepb, client::apipb};
 
 struct Server {}
-
-#[async_trait]
-impl apipb::blob_uploader_server::BlobUploader for Server {
-    async fn upload(
-        &self,
-        request: tonic::Request<apipb::BlobRequest>,
-    ) -> Result<tonic::Response<apipb::BlobResponse>, tonic::Status> {
-        todo!()
-    }
-}
-
-#[async_trait]
-impl cachepb::cache_node_service_server::CacheNodeService for Server {
-    async fn heartbeat(
-        &self,
-        _request: tonic::Request<cachepb::HeartbeatRequest>,
-    ) -> Result<tonic::Response<cachepb::HeartbeatResponse>, tonic::Status> {
-        todo!()
-    }
-}

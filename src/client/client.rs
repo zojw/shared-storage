@@ -21,9 +21,8 @@ use super::{
     apipb::{
         self, blob_upload_control_client::BlobUploadControlClient,
         blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
-        reader_client::ReaderClient, KeyRange, PrepareUploadResponse, Location,
+        reader_client::ReaderClient, KeyRange, Location, PrepareUploadResponse,
     },
-    blob_writer::BlobStoreWriter,
     MockStream,
 };
 use crate::{blobstore::MemBlobStore, error::Result, manifest::storage::NewBlob};
@@ -67,7 +66,7 @@ impl Client {
         let up = Request::new(apipb::BlobRequest {
             bucket: bucket.to_owned(),
             object: object.to_owned(),
-            content,
+            content, // TODO: split content if it over boundary?
         });
         self.get_uploader(&locations[0]).await?.upload(up).await?;
 
@@ -112,11 +111,11 @@ impl Client {
         blob_store: MemBlobStore,
     ) -> Result<BlobUploaderClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
-        let blob_writer = BlobStoreWriter { blob_store };
+        let uploader = crate::cache::Uploader {};
         tokio::spawn(async move {
             Server::builder()
                 .add_service(apipb::blob_uploader_server::BlobUploaderServer::new(
-                    blob_writer,
+                    uploader,
                 ))
                 .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
                     MockStream(server),

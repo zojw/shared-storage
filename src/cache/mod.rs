@@ -15,6 +15,9 @@
 mod reader;
 mod server;
 mod storage;
+mod uploader;
+
+pub use uploader::Uploader;
 
 pub mod cachepb {
     tonic::include_proto!("engula.storage.v1.cache");

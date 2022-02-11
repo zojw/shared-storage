@@ -14,19 +14,18 @@
 
 mod mem;
 
-use async_trait::async_trait;
-use tokio::io::AsyncWrite;
+pub use mem::MemCacheStore;
 
+use async_trait::async_trait;
 use crate::error::Result;
 
 #[async_trait]
-trait CacheStorage {
-    type Writer: AsyncWrite;
-
+pub trait CacheStorage {
     async fn create_bucket(&self, bucket: &str) -> Result<()>;
     async fn delete_bucket(&self, bucket: &str) -> Result<()>;
     async fn list_buckets(&self) -> Result<Vec<String>>;
-    fn put_object(&self, bucket: &str, object: &str) -> Result<Self::Writer>;
-    async fn read_object(&self, bucket: &str, object: &str, pos: i32, len: i32) -> Result<Vec<u8>>;
     async fn list_objects(&self, bucket: &str) -> Result<Vec<String>>;
+
+    async fn put_object(&self, bucket: &str, object: &str, content: Vec<u8>) -> Result<()>;
+    async fn read_object(&self, bucket: &str, object: &str) -> Result<Vec<u8>>;
 }

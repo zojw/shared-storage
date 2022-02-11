@@ -12,29 +12,78 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
+use tonic::{Request, Response, Status};
 
-use super::cachepb;
-use crate::client::apipb;
+use super::cachepb::{self, HeartbeatRequest, HeartbeatResponse};
+use crate::client::apipb::{self, BlobRequest, BlobResponse};
 
-pub struct Uploader {}
+pub struct Uploader<C, B, R>
+where
+    C: crate::cache::storage::CacheStorage,
+    B: crate::blobstore::BlobStore,
+    R: crate::cache::storage::CacheStorage,
+{
+    local_cache: Arc<C>,
+    blob_store: Arc<B>,
+    replica_cache: Option<Arc<R>>,
+}
 
-#[async_trait]
-impl apipb::blob_uploader_server::BlobUploader for Uploader {
-    async fn upload(
-        &self,
-        request: tonic::Request<apipb::BlobRequest>,
-    ) -> Result<tonic::Response<apipb::BlobResponse>, tonic::Status> {
-        todo!()
+impl<C, B, R> Uploader<C, B, R>
+where
+    C: crate::cache::storage::CacheStorage,
+    B: crate::blobstore::BlobStore,
+    R: crate::cache::storage::CacheStorage,
+{
+    pub fn new(local_cache: Arc<C>, blob_store: Arc<B>, replica_cache: Option<Arc<R>>) -> Self {
+        Self {
+            local_cache,
+            blob_store,
+            replica_cache,
+        }
     }
 }
 
 #[async_trait]
-impl cachepb::cache_node_service_server::CacheNodeService for Uploader {
+impl<C, B, R> apipb::blob_uploader_server::BlobUploader for Uploader<C, B, R>
+where
+    C: crate::cache::storage::CacheStorage + Send + Sync + 'static,
+    B: crate::blobstore::BlobStore + Send + Sync + 'static,
+    R: crate::cache::storage::CacheStorage + Send + Sync + 'static,
+{
+    async fn upload(
+        &self,
+        request: Request<BlobRequest>,
+    ) -> Result<Response<BlobResponse>, Status> {
+        let request = request.get_ref().to_owned();
+        self.blob_store
+            .put_object(&request.bucket, &request.blob, request.content.to_owned())
+            .await?;
+        self.local_cache
+            .put_object(&request.bucket, &request.blob, request.content.to_owned())
+            .await?;
+        if let Some(replica) = &self.replica_cache {
+            replica
+                .put_object(&request.bucket, &request.blob, request.content.to_owned())
+                .await?;
+        }
+        Ok(Response::new(BlobResponse {}))
+    }
+}
+
+#[async_trait]
+impl<C, B, R> cachepb::cache_node_service_server::CacheNodeService for Uploader<C, B, R>
+where
+    C: crate::cache::storage::CacheStorage + Send + Sync + 'static,
+    B: crate::blobstore::BlobStore + Send + Sync + 'static,
+    R: crate::cache::storage::CacheStorage + Send + Sync + 'static,
+{
     async fn heartbeat(
         &self,
-        _request: tonic::Request<cachepb::HeartbeatRequest>,
-    ) -> Result<tonic::Response<cachepb::HeartbeatResponse>, tonic::Status> {
+        _request: Request<HeartbeatRequest>,
+    ) -> Result<Response<HeartbeatResponse>, Status> {
         todo!()
     }
 }

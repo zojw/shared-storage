@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod mock;
+mod mem;
 mod s3;
 
 use async_trait::async_trait;
-pub use mock::MemBlobStore;
+pub use mem::MemBlobStore;
 
 use crate::error::Result;
 

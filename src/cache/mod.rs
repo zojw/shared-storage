@@ -17,6 +17,7 @@ mod server;
 mod storage;
 mod uploader;
 
+pub use storage::{CacheStorage, MemCacheStore};
 pub use uploader::Uploader;
 
 pub mod cachepb {

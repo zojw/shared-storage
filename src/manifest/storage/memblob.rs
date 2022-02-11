@@ -31,7 +31,7 @@ pub struct MemBlobMetaStore<B>
 where
     B: BlobStore,
 {
-    blob_store: B,
+    blob_store: Arc<B>,
     versions: Arc<Mutex<Vec<super::VersionEdit>>>,
 }
 
@@ -39,7 +39,7 @@ impl<B> MemBlobMetaStore<B>
 where
     B: BlobStore,
 {
-    pub async fn new(blob_store: B) -> Result<Self> {
+    pub async fn new(blob_store: Arc<B>) -> Result<Self> {
         let s = Self {
             blob_store,
             versions: Arc::new(Mutex::new(Vec::new())),

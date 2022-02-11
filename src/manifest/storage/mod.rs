@@ -32,6 +32,8 @@ pub trait MetaStorage {
 #[cfg(test)]
 mod tests {
 
+    use std::sync::Arc;
+
     use super::{
         memblob::MemBlobMetaStore, BlobStats, DeleteBlob, MetaStorage, NewBlob, VersionEdit,
     };
@@ -39,7 +41,7 @@ mod tests {
 
     #[tokio::test]
     async fn it_works() -> Result<()> {
-        let bs = MemBlobStore::default();
+        let bs = Arc::new(MemBlobStore::default());
         let s = MemBlobMetaStore::new(bs).await?;
         s.append(VersionEdit {
             add_buckets: vec!["b1".to_owned(), "b2".to_owned()],

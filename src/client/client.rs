@@ -25,37 +25,42 @@ use super::{
     },
     MockStream,
 };
-use crate::{blobstore::MemBlobStore, error::Result, manifest::storage::NewBlob};
+use crate::{
+    error::Result,
+    manifest::storage::NewBlob,
+};
 
 pub struct Client {
     blob_controller: BlobUploadControlClient<Channel>,
     locator: LocatorClient<Channel>,
-    blob_store: MemBlobStore,
+    blob_uploaders: Vec<BlobUploaderClient<Channel>>,
 }
 
 impl Client {
     pub fn new(
         blob_controller: BlobUploadControlClient<Channel>,
         locator: LocatorClient<Channel>,
-        blob_store: MemBlobStore,
+        blob_uploaders: Vec<BlobUploaderClient<Channel>>,
     ) -> Self {
         Self {
             blob_controller,
             locator,
-            blob_store,
+            blob_uploaders,
         }
     }
 
-    pub async fn flush(&mut self, bucket: &str, object: &str, content: Vec<u8>) -> Result<()> {
+    pub async fn flush(&mut self, bucket: &str, blob: &str, content: Vec<u8>) -> Result<()> {
         // prepare blob updload.
         let base_level: u32 = 0; // TODO: smart choose base level.
-        let blob = NewBlob {
+        let new_blob = NewBlob {
             bucket: bucket.to_owned(),
-            blob: object.to_owned(),
+            blob: blob.to_owned(),
             level: base_level,
             stats: None,
         };
-        let prep = Request::new(apipb::PrepareUploadRequest { blobs: vec![blob] });
+        let prep = Request::new(apipb::PrepareUploadRequest {
+            blobs: vec![new_blob],
+        });
         let resp = self.blob_controller.prepare_upload(prep).await?;
         let PrepareUploadResponse {
             upload_token,
@@ -65,7 +70,7 @@ impl Client {
         // upload blob data.
         let up = Request::new(apipb::BlobRequest {
             bucket: bucket.to_owned(),
-            object: object.to_owned(),
+            blob: blob.to_owned(),
             content, // TODO: split content if it over boundary?
         });
         self.get_uploader(&locations[0]).await?.upload(up).await?;
@@ -103,34 +108,8 @@ impl Client {
     }
 
     pub async fn get_uploader(&self, _loc: &Location) -> Result<BlobUploaderClient<Channel>> {
-        // TODO: use real instead of mock one
-        Self::build_local_blob_writer(self.blob_store.clone()).await
-    }
-
-    async fn build_local_blob_writer(
-        blob_store: MemBlobStore,
-    ) -> Result<BlobUploaderClient<Channel>> {
-        let (client, server) = tokio::io::duplex(1024);
-        let uploader = crate::cache::Uploader {};
-        tokio::spawn(async move {
-            Server::builder()
-                .add_service(apipb::blob_uploader_server::BlobUploaderServer::new(
-                    uploader,
-                ))
-                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
-                    MockStream(server),
-                )]))
-                .await
-        });
-        let mut client = Some(client);
-        let channel = Endpoint::try_from("http://[::]:50051")?
-            .connect_with_connector(tower::service_fn(move |_: Uri| {
-                let client = client.take().unwrap();
-                async move { Ok::<_, std::io::Error>(MockStream(client)) }
-            }))
-            .await?;
-        let client = BlobUploaderClient::new(channel);
-        Ok(client)
+        // TODO: route right uploader by _loc
+        Ok(self.blob_uploaders[0].clone())
     }
 
     pub async fn get_reader(&self, _store: u64) -> Result<ReaderClient<Channel>> {

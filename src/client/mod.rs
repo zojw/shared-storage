@@ -34,12 +34,14 @@ mod tests {
 
     use super::{
         apipb::{
-            blob_upload_control_client::BlobUploadControlClient, locator_client::LocatorClient,
+            blob_upload_control_client::BlobUploadControlClient,
+            blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
         },
         MockStream,
     };
     use crate::{
         blobstore::MemBlobStore,
+        cache::{MemCacheStore, Uploader},
         client::{apipb, client::Client},
         error::Result,
         manifest::{storage::MemBlobMetaStore, VersionSet},
@@ -47,16 +49,46 @@ mod tests {
 
     #[tokio::test]
     async fn it_works() -> Result<()> {
-        let blob_store = MemBlobStore::default();
+        let blob_store = Arc::new(MemBlobStore::default());
         let meta_store = MemBlobMetaStore::new(blob_store.clone()).await?;
+        let local_store = Arc::new(MemCacheStore::default());
         let version_set = Arc::new(VersionSet::new(meta_store).await?);
         let blob_control = build_blob_control(version_set.clone()).await?;
         let manifest_locator = build_manifest_locator(version_set.clone()).await?;
-        let mut client = Client::new(blob_control, manifest_locator, blob_store);
+        let cache_uploader = build_cache_uploader(local_store, blob_store.clone()).await?;
+        let mut client = Client::new(blob_control, manifest_locator, vec![cache_uploader]);
         client.flush("b1", "o1", b"abc".to_vec()).await?;
         let res = client.query(apipb::QueryExp {}).await?;
         assert_eq!(res.len(), 1);
         Ok(())
+    }
+
+    async fn build_cache_uploader(
+        local_store: Arc<MemCacheStore>,
+        blob_store: Arc<MemBlobStore>,
+    ) -> Result<BlobUploaderClient<Channel>> {
+        let (client, server) = tokio::io::duplex(1024);
+        let uploader: Uploader<MemCacheStore, MemBlobStore, MemCacheStore> =
+            Uploader::new(local_store, blob_store, None);
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(apipb::blob_uploader_server::BlobUploaderServer::new(
+                    uploader,
+                ))
+                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
+                    MockStream(server),
+                )]))
+                .await
+        });
+        let mut client = Some(client);
+        let channel = Endpoint::try_from("http://[::]:50051")?
+            .connect_with_connector(tower::service_fn(move |_: Uri| {
+                let client = client.take().unwrap();
+                async move { Ok::<_, std::io::Error>(MockStream(client)) }
+            }))
+            .await?;
+        let client = BlobUploaderClient::new(channel);
+        Ok(client)
     }
 
     async fn build_manifest_locator(

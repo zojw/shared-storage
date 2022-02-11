@@ -112,7 +112,7 @@ message RollbackUploadResponse {}
 
 message BlobRequest {
 	string bucket = 1;
-	string object = 2;
+	string blob = 2;
 	bytes content = 3;
 }
 

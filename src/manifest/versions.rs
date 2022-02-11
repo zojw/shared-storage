@@ -163,7 +163,7 @@ where
 
         let ves = self.meta_store.read_all().await?;
         let mut new_version = Arc::new(Version::default());
-        if ves.is_empty() {
+        if !ves.is_empty() {
             for ve in &ves {
                 new_version = new_version.apply(ve.clone());
                 vs.push(Arc::new(new_version.as_ref().clone()))

@@ -21,7 +21,7 @@ use super::{
     apipb::{
         self, blob_upload_control_client::BlobUploadControlClient,
         blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
-        reader_client::ReaderClient, KeyRange, PrepareUploadResponse, WriteLocation,
+        reader_client::ReaderClient, KeyRange, PrepareUploadResponse, Location,
     },
     blob_writer::BlobStoreWriter,
     MockStream,
@@ -103,7 +103,7 @@ impl Client {
         Ok(result)
     }
 
-    pub async fn get_uploader(&self, _loc: &WriteLocation) -> Result<BlobUploaderClient<Channel>> {
+    pub async fn get_uploader(&self, _loc: &Location) -> Result<BlobUploaderClient<Channel>> {
         // TODO: use real instead of mock one
         Self::build_local_blob_writer(self.blob_store.clone()).await
     }

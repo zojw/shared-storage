@@ -19,7 +19,7 @@ use tonic::{Request, Response, Status};
 
 use super::{storage, versions::VersionSet};
 use crate::{
-    client::apipb::{self, FinishUploadResponse, PrepareUploadResponse},
+    client::apipb::{self, FinishUploadResponse, KeyRange, Location, PrepareUploadResponse},
     manifest::storage::{NewBlob, StagingBlob, StagingOperation, VersionEdit},
 };
 
@@ -59,12 +59,30 @@ where
                 desc: Some(b.to_owned()),
             })
             .collect();
-        let locs = vec![]; // TODO: give a writable location.
+
+        // TODO: real world usage should handle "split by range boundary" logic here?
+        let locs: Vec<Location> = request
+            .get_ref()
+            .blobs
+            .iter()
+            .map(|b| Location {
+                range: Some(KeyRange {
+                    bucket: b.bucket.to_owned(),
+                    start: b"1".to_vec(),
+                    end: b"3".to_vec(),
+                }),
+                bucket: b.bucket.to_owned(),
+                blob: b.blob.to_owned(),
+                store: 1,
+                level: b.level.to_owned(),
+            })
+            .collect();
+
         let token = "11233"; // TODO: real token
         let stg = StagingOperation {
             token: token.to_owned(),
             deadline_ts: 0, // TODO:.... handle cleanup logic.
-            locations: locs.to_owned(),
+            locations: locs.iter().map(|l| l.store).collect(),
             add_bucket: vec![],
             add_blob: blobs,
         };
@@ -82,7 +100,7 @@ where
 
         Ok(Response::new(PrepareUploadResponse {
             upload_token: token.to_string(), // TODO..
-            locations: vec![],
+            locations: locs.to_owned(),
         }))
     }
 

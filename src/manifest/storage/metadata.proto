@@ -39,7 +39,7 @@ message StagingBlob {
 message StagingOperation {
 	string token = 1;
 	uint64 deadline_ts = 2;
-	repeated string locations = 3;
+	repeated uint64 locations = 3;
 	repeated StagingBucket add_bucket = 4;
 	repeated StagingBlob   add_blob = 5;
 }

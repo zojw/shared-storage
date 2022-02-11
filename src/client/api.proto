@@ -95,13 +95,7 @@ message PrepareUploadRequest {
 
 message PrepareUploadResponse {
 	string upload_token = 1;
-	repeated WriteLocation locations = 2;
-}
-
-message WriteLocation {
-	string bucket = 1;
-	string blob = 2;
-	string store = 3;
+	repeated Location locations = 2;
 }
 
 message FinishUploadRequest {

@@ -23,7 +23,7 @@ use crate::{
     error::Result,
     manifest::{
         manifestpb::{bucket_service_client::BucketServiceClient, CreateBucketRequest},
-        storage::NewBlob,
+        storage::{BlobStats, NewBlob},
     },
 };
 
@@ -59,7 +59,14 @@ impl Client {
             bucket: bucket.to_owned(),
             blob: blob.to_owned(),
             level: base_level,
-            stats: None,
+            stats: Some(BlobStats {
+                smallest: b"2".to_vec(),
+                largest: b"3".to_vec(),
+                smallest_sequence: 0,
+                largest_sequence: 0,
+                object_num: 1,
+                deletion_num: 0,
+            }),
         };
         let prep = Request::new(apipb::PrepareUploadRequest {
             blobs: vec![new_blob],
@@ -91,7 +98,7 @@ impl Client {
             ranges: vec![KeyRange {
                 bucket: "b1".to_string(),
                 start: b"1".to_vec(),
-                end: b"2".to_vec(),
+                end: b"9".to_vec(),
             }],
         });
         let mut result = Vec::new();

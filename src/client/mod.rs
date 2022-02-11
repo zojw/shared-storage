@@ -63,7 +63,7 @@ mod tests {
         let cache_uploader = build_cache_uploader(local_store.clone(), blob_store.clone()).await?;
         let cache_reader = build_cache_reader().await?;
         let cache_bucket = build_cache_bucket_mng(local_store.clone()).await?;
-        let bucket_mng =
+        let manifest_bucket_mng =
             build_manifest_bucket_mng(blob_store.clone(), version_set.clone(), cache_bucket)
                 .await?;
 
@@ -72,13 +72,13 @@ mod tests {
             vec![cache_uploader],
             manifest_locator,
             vec![cache_reader],
-            bucket_mng,
+            manifest_bucket_mng,
         );
 
         client.create_bucket("b1").await?;
-        client.flush("b1", "o1", b"abc".to_vec()).await?;
-        // let res = client.query(apipb::QueryExp {}).await?;
-        // assert_eq!(res.len(), 1);
+        client.flush("b1", "o2", b"abc".to_vec()).await?;
+        let res = client.query(apipb::QueryExp {}).await?;
+        assert_eq!(res.len(), 1);
         Ok(())
     }
 

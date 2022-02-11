@@ -28,6 +28,8 @@ use crate::{
 
 #[derive(Clone)]
 pub struct BlobDesc {
+    pub bucket: String,
+    pub blob: String,
     pub level: u32,
     pub smallest: Vec<u8>,
     pub largest: Vec<u8>,
@@ -78,15 +80,29 @@ impl Version {
     }
 
     pub fn get_location(&self, ranges: Vec<KeyRange>) -> Vec<Location> {
+        use std::ops::Bound::{Excluded, Included};
         // TODO: find location between levels.
-        let locs = Vec::new();
+        let mut locs = Vec::new();
         for ran in ranges {
             let levels = self.levels.get(&ran.bucket).unwrap();
             for (level, blobs) in levels {
-                if *level == 0 {
-                    todo!()
-                } else {
-                    todo!()
+                for (_, blob) in
+                    blobs.range((Included(ran.start.to_owned()), Excluded(ran.end.to_owned())))
+                {
+                    locs.push(Location {
+                        bucket: ran.bucket.to_owned(),
+                        blob: blob.blob.to_owned(),
+                        range: Some(KeyRange {
+                            bucket: ran.bucket.to_owned(),
+                            start: ran.start.to_owned(),
+                            end: ran.end.to_owned(),
+                        }),
+                        store: 1, // TODO: collect store info by hearbeat.
+                        level: blob.level,
+                    });
+                    if *level != 0 && ran.end.to_owned() <= blob.largest {
+                        break;
+                    }
                 }
             }
         }
@@ -139,6 +155,8 @@ impl Version {
                 buckets.insert(
                     new_blob.blob.to_owned(),
                     BlobDesc {
+                        bucket: new_blob.bucket.to_owned(),
+                        blob: new_blob.blob.to_owned(),
                         level: new_blob.level,
                         smallest,
                         largest,
@@ -157,6 +175,8 @@ impl Version {
                     blobs_in_level.insert(
                         stats.smallest.to_owned(),
                         BlobDesc {
+                            bucket: new_blob.bucket.to_owned(),
+                            blob: new_blob.blob.to_owned(),
                             level: new_blob.level,
                             smallest: stats.smallest,
                             largest: stats.largest,

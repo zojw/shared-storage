@@ -48,9 +48,9 @@ where
         request: tonic::Request<HeartbeatRequest>,
     ) -> Result<Response<HeartbeatResponse>, Status> {
         let HeartbeatRequest {
+            server_id,
             last_seq,
             current_seq,
-            ..
         } = request.get_ref().to_owned();
 
         let cache_event = self.status.fetch_change_event(last_seq, current_seq).await;
@@ -58,6 +58,7 @@ where
         Ok(Response::new(HeartbeatResponse {
             current_seq,
             status: Some(cachepb::Status {
+                server_id: server_id,
                 cache_event: Some(cache_event),
             }),
         }))

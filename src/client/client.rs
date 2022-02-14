@@ -118,7 +118,7 @@ impl Client {
     }
 
     pub async fn get_uploader(&self, _loc: &Location) -> Result<BlobUploaderClient<Channel>> {
-        // TODO: route right uploader by _loc
+        // TODO: it should be factorization and route right uploader by _loc
         Ok(self.blob_uploaders[0].clone())
     }
 

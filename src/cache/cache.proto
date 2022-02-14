@@ -64,7 +64,8 @@ message HeartbeatResponse {
 }
 
 message Status {
-  CacheEvent cache_event = 1;
+  uint32 server_id = 1;
+  CacheEvent cache_event = 2;
 }
 
 message CacheEvent {

@@ -20,9 +20,9 @@ use super::{cachepb, storage};
 use crate::error::Result;
 
 #[derive(Hash, PartialEq, Eq, Clone)]
-struct BucketObject {
+struct BucketBlob {
     bucket: String,
-    object: String,
+    blob: String,
 }
 
 // CacheStatus maintains the memory status for current cache node.
@@ -36,7 +36,7 @@ where
 
 struct Inner {
     buckets: HashSet<String>,
-    objects: HashSet<BucketObject>,
+    blobs: HashSet<BucketBlob>,
     last_heartbeat: u64,
     delta: Vec<Event>,
 }
@@ -44,8 +44,8 @@ struct Inner {
 enum Event {
     AddBucket { bucket: String },
     DeleteBucket { bucket: String },
-    AddBlob { bucket: String, object: String },
-    DeleteObject { bucket: String, object: String },
+    AddBlob { bucket: String, blob: String },
+    DeleteBlob { bucket: String, blob: String },
 }
 
 impl<S> CacheStatus<S>
@@ -56,7 +56,7 @@ where
         let s = Self {
             inner: Arc::new(Mutex::new(Inner {
                 buckets: HashSet::new(),
-                objects: HashSet::new(),
+                blobs: HashSet::new(),
                 last_heartbeat: 0,
                 delta: Vec::new(),
             })),
@@ -69,17 +69,17 @@ where
     async fn recovery(&self) -> Result<()> {
         let mut inner = self.inner.lock().await;
         inner.buckets = self.store.list_buckets().await?.iter().cloned().collect();
-        let mut objects = HashSet::new();
+        let mut blobs = HashSet::new();
         for bucket in &inner.buckets {
-            let objs = self.store.list_objects(&bucket).await?;
-            for obj in objs {
-                objects.insert(BucketObject {
-                    bucket: bucket.to_owned(),
-                    object: obj.to_owned(),
+            let bs = self.store.list_objects(&bucket).await?;
+            for b in bs {
+                blobs.insert(BucketBlob {
+                    bucket: b.to_owned(),
+                    blob: b.to_owned(),
                 });
             }
         }
-        inner.objects = objects;
+        inner.blobs = blobs;
         Ok(())
     }
 
@@ -99,63 +99,63 @@ where
         });
     }
 
-    pub async fn add_blob(&self, bucket: &str, object: &str) {
+    pub async fn add_blob(&self, bucket: &str, blob: &str) {
         let mut inner = self.inner.lock().await;
         assert!(inner.buckets.contains(bucket));
-        inner.objects.insert(BucketObject {
+        inner.blobs.insert(BucketBlob {
             bucket: bucket.to_owned(),
-            object: object.to_owned(),
+            blob: blob.to_owned(),
         });
         inner.delta.push(Event::AddBlob {
             bucket: bucket.to_owned(),
-            object: object.to_owned(),
+            blob: blob.to_owned(),
         });
     }
 
-    pub async fn delete_blob(&self, bucket: &str, object: &str) {
+    pub async fn delete_blob(&self, bucket: &str, blob: &str) {
         let mut inner = self.inner.lock().await;
         assert!(inner.buckets.contains(bucket));
-        let bo = BucketObject {
+        let bo = BucketBlob {
             bucket: bucket.to_owned(),
-            object: object.to_owned(),
+            blob: blob.to_owned(),
         };
-        inner.objects.remove(&bo);
-        inner.delta.push(Event::DeleteObject {
+        inner.blobs.remove(&bo);
+        inner.delta.push(Event::DeleteBlob {
             bucket: bucket.to_owned(),
-            object: object.to_owned(),
+            blob: blob.to_owned(),
         });
     }
 
-    pub async fn fetch_change_event(&self, last_ts: u64, current_ts: u64) -> cachepb::ObjectEvent {
+    pub async fn fetch_change_event(&self, last_ts: u64, current_ts: u64) -> cachepb::CacheEvent {
         let mut inner = self.inner.lock().await;
         let ev = if last_ts != inner.last_heartbeat {
             // new started or fetch but fail to apply manifest-service.
             let bucket_added = inner.buckets.iter().cloned().collect::<Vec<String>>();
 
-            let object_added = inner
-                .objects
+            let blob_added = inner
+                .blobs
                 .iter()
                 .cloned()
-                .map(|b| cachepb::BucketObject {
+                .map(|b| cachepb::BucketBlob {
                     bucket: b.bucket.to_owned(),
-                    object: b.object.to_owned(),
+                    blob: b.blob.to_owned(),
                 })
-                .collect::<Vec<cachepb::BucketObject>>();
+                .collect::<Vec<cachepb::BucketBlob>>();
 
-            cachepb::ObjectEvent {
-                typ: cachepb::object_event::EventType::Full.into(),
+            cachepb::CacheEvent {
+                typ: cachepb::cache_event::EventType::Full.into(),
                 bucket_added,
                 bucket_delete: vec![],
-                object_added,
-                object_delete: vec![],
+                blob_added,
+                blob_delete: vec![],
             }
         } else {
-            let mut delat_ev = cachepb::ObjectEvent {
-                typ: cachepb::object_event::EventType::Increment.into(),
+            let mut delat_ev = cachepb::CacheEvent {
+                typ: cachepb::cache_event::EventType::Increment.into(),
                 bucket_added: vec![],
                 bucket_delete: vec![],
-                object_added: vec![],
-                object_delete: vec![],
+                blob_added: vec![],
+                blob_delete: vec![],
             };
             for de in &inner.delta {
                 match de {
@@ -163,16 +163,16 @@ where
                     Event::DeleteBucket { bucket } => {
                         delat_ev.bucket_delete.push(bucket.to_owned())
                     }
-                    Event::AddBlob { bucket, object } => {
-                        delat_ev.object_added.push(cachepb::BucketObject {
+                    Event::AddBlob { bucket, blob } => {
+                        delat_ev.blob_added.push(cachepb::BucketBlob {
                             bucket: bucket.to_owned(),
-                            object: object.to_owned(),
+                            blob: blob.to_owned(),
                         })
                     }
-                    Event::DeleteObject { bucket, object } => {
-                        delat_ev.object_delete.push(cachepb::BucketObject {
+                    Event::DeleteBlob { bucket, blob } => {
+                        delat_ev.blob_delete.push(cachepb::BucketBlob {
                             bucket: bucket.to_owned(),
-                            object: object.to_owned(),
+                            blob: blob.to_owned(),
                         })
                     }
                 }

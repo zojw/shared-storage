@@ -54,12 +54,11 @@ mod tests {
 
     #[tokio::test]
     async fn it_works() -> Result<()> {
+        // 0. blob_store access helper (shared lib)
         let blob_store = Arc::new(MemBlobStore::default());
-        let meta_store = MemBlobMetaStore::new(blob_store.clone()).await?;
+
+        // 1. cache node above blob_store(grpc service)
         let local_store = Arc::new(MemCacheStore::default());
-        let version_set = Arc::new(VersionSet::new(meta_store).await?);
-        let blob_control = build_blob_control(version_set.clone()).await?;
-        let manifest_locator = build_manifest_locator(version_set.clone()).await?;
         let cache_status = Arc::new(CacheStatus::new(local_store.clone()).await?);
         let cache_uploader = build_cache_uploader(
             local_store.clone(),
@@ -70,18 +69,26 @@ mod tests {
         let cache_reader = build_cache_reader().await?;
         let cache_bucket =
             build_cache_bucket_mng(local_store.clone(), cache_status.clone()).await?;
-        let manifest_bucket_mng =
+
+        // 2. manifest server manage cache node and blob_store(grpc service)
+        let meta_store = MemBlobMetaStore::new(blob_store.clone()).await?;
+        let version_set = Arc::new(VersionSet::new(meta_store).await?);
+        let blob_control = build_blob_control(version_set.clone()).await?;
+        let manifest_locator = build_manifest_locator(version_set.clone()).await?;
+        let manifest_bucket =
             build_manifest_bucket_mng(blob_store.clone(), version_set.clone(), cache_bucket)
                 .await?;
 
+        // 3. client use mainifest & cache node(lib).
         let mut client = Client::new(
             blob_control,
             vec![cache_uploader],
             manifest_locator,
             vec![cache_reader],
-            manifest_bucket_mng,
+            manifest_bucket,
         );
 
+        // 4. simple test.
         client.create_bucket("b1").await?;
         client.flush("b1", "o2", b"abc".to_vec()).await?;
         let res = client.query(apipb::QueryExp {}).await?;

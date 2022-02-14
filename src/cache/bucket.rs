@@ -20,8 +20,8 @@ use tonic::{Request, Response, Status};
 use super::{
     cachepb::{
         CreateBucketRequest, CreateBucketResponse, DeleteBlobRequest, DeleteBlobResponse,
-        DeleteBucketRequest, DeleteBucketResponse, ListBucketsRequest, ListBucketsResponse,
-        ListObjectsRequest, ListObjectsResponse,
+        DeleteBucketRequest, DeleteBucketResponse, ListBlobsRequest, ListBlobsResponse,
+        ListBucketsRequest, ListBucketsResponse,
     },
     status::CacheStatus,
     CacheStorage,
@@ -69,6 +69,7 @@ where
     ) -> Result<Response<DeleteBucketResponse>, Status> {
         let bucket = request.get_ref().bucket.to_owned();
         self.local_store.delete_bucket(&bucket).await?;
+        self.status.delete_bucket(&bucket).await;
         Ok(Response::new(DeleteBucketResponse {}))
     }
 
@@ -90,12 +91,12 @@ where
         Ok(Response::new(ListBucketsResponse { buckets }))
     }
 
-    async fn list_objects(
+    async fn list_blobs(
         &self,
-        request: Request<ListObjectsRequest>,
-    ) -> Result<Response<ListObjectsResponse>, Status> {
+        request: Request<ListBlobsRequest>,
+    ) -> Result<Response<ListBlobsResponse>, Status> {
         let bucket = request.get_ref().bucket.to_owned();
         let blobs = self.local_store.list_objects(&bucket).await?;
-        Ok(Response::new(ListObjectsResponse { objects: blobs }))
+        Ok(Response::new(ListBlobsResponse { blobs }))
     }
 }

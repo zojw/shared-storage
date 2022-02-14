@@ -25,7 +25,7 @@ service BucketService {
 
   rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {}
 
-  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {}
+  rpc ListBlobs(ListBlobsRequest) returns (ListBlobsResponse) {}
 }
 
 service CacheNodeService {
@@ -48,9 +48,9 @@ message ListBucketsRequest {}
 
 message ListBucketsResponse { repeated string buckets = 1; }
 
-message ListObjectsRequest { string bucket = 1; }
+message ListBlobsRequest { string bucket = 1; }
 
-message ListObjectsResponse { repeated string objects = 1; }
+message ListBlobsResponse { repeated string blobs = 1; }
 
 message HeartbeatRequest {
   uint32 server_id = 1;
@@ -64,10 +64,10 @@ message HeartbeatResponse {
 }
 
 message Status {
-  ObjectEvent object_event = 1;
+  CacheEvent cache_event = 1;
 }
 
-message ObjectEvent {
+message CacheEvent {
   enum EventType {
 		Full = 0;
 		Increment = 1;
@@ -75,11 +75,11 @@ message ObjectEvent {
   EventType typ = 1;
   repeated string bucket_added = 2;
   repeated string bucket_delete = 3;
-  repeated BucketObject object_added = 4;
-  repeated BucketObject object_delete = 5;
+  repeated BucketBlob blob_added = 4;
+  repeated BucketBlob blob_delete = 5;
 }
 
-message BucketObject {
+message BucketBlob {
   string bucket = 1;
-  string object = 2;
+  string blob = 2;
 }

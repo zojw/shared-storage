@@ -17,7 +17,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tonic::{Request, Response, Status};
 
-use super::cachepb::{self, HeartbeatRequest, HeartbeatResponse};
+use super::{
+    cachepb::{self, HeartbeatRequest, HeartbeatResponse},
+    status::CacheStatus,
+};
 use crate::client::apipb::{self, BlobRequest, BlobResponse};
 
 pub struct Uploader<C, B, R>
@@ -29,6 +32,7 @@ where
     local_cache: Arc<C>,
     blob_store: Arc<B>,
     replica_cache: Option<Arc<R>>,
+    status: Arc<CacheStatus<C>>,
 }
 
 impl<C, B, R> Uploader<C, B, R>
@@ -37,11 +41,17 @@ where
     B: crate::blobstore::BlobStore,
     R: crate::cache::storage::CacheStorage,
 {
-    pub fn new(local_cache: Arc<C>, blob_store: Arc<B>, replica_cache: Option<Arc<R>>) -> Self {
+    pub fn new(
+        local_cache: Arc<C>,
+        blob_store: Arc<B>,
+        replica_cache: Option<Arc<R>>,
+        status: Arc<CacheStatus<C>>,
+    ) -> Self {
         Self {
             local_cache,
             blob_store,
             replica_cache,
+            status,
         }
     }
 }
@@ -70,6 +80,7 @@ where
                 .put_object(&request.bucket, &request.blob, request.content.to_owned())
                 .await?;
         }
+        self.status.add_blob(&request.bucket, &request.blob).await;
         Ok(Response::new(BlobResponse {}))
     }
 }

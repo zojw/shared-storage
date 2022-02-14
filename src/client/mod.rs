@@ -27,7 +27,7 @@ mod tests {
     };
 
     use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
-    use tonic::transport::{channel, server::Connected, Channel, Endpoint, Server, Uri};
+    use tonic::transport::{server::Connected, Channel, Endpoint, Server, Uri};
 
     use super::apipb::{
         blob_upload_control_client::BlobUploadControlClient,
@@ -38,7 +38,7 @@ mod tests {
         blobstore::MemBlobStore,
         cache::{
             cachepb::bucket_service_client::BucketServiceClient as CacheBucketServiceClient,
-            MemCacheStore, Uploader,
+            CacheStatus, MemCacheStore, Uploader,
         },
         client::{apipb, client::Client},
         error::Result,
@@ -60,9 +60,16 @@ mod tests {
         let version_set = Arc::new(VersionSet::new(meta_store).await?);
         let blob_control = build_blob_control(version_set.clone()).await?;
         let manifest_locator = build_manifest_locator(version_set.clone()).await?;
-        let cache_uploader = build_cache_uploader(local_store.clone(), blob_store.clone()).await?;
+        let cache_status = Arc::new(CacheStatus::new(local_store.clone()).await?);
+        let cache_uploader = build_cache_uploader(
+            local_store.clone(),
+            blob_store.clone(),
+            cache_status.clone(),
+        )
+        .await?;
         let cache_reader = build_cache_reader().await?;
-        let cache_bucket = build_cache_bucket_mng(local_store.clone()).await?;
+        let cache_bucket =
+            build_cache_bucket_mng(local_store.clone(), cache_status.clone()).await?;
         let manifest_bucket_mng =
             build_manifest_bucket_mng(blob_store.clone(), version_set.clone(), cache_bucket)
                 .await?;
@@ -85,10 +92,11 @@ mod tests {
     async fn build_cache_uploader(
         local_store: Arc<MemCacheStore>,
         blob_store: Arc<MemBlobStore>,
+        cache_status: Arc<CacheStatus<MemCacheStore>>,
     ) -> Result<BlobUploaderClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
         let uploader: Uploader<MemCacheStore, MemBlobStore, MemCacheStore> =
-            Uploader::new(local_store, blob_store, None);
+            Uploader::new(local_store, blob_store, None, cache_status);
         tokio::spawn(async move {
             Server::builder()
                 .add_service(apipb::blob_uploader_server::BlobUploaderServer::new(
@@ -161,9 +169,10 @@ mod tests {
 
     async fn build_cache_bucket_mng(
         local: Arc<MemCacheStore>,
+        cache_status: Arc<CacheStatus<MemCacheStore>>,
     ) -> Result<CacheBucketServiceClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
-        let svc = crate::cache::CacheNodeBucketService::new(local);
+        let svc = crate::cache::CacheNodeBucketService::new(local, cache_status);
         tokio::spawn(async move {
             Server::builder()
                 .add_service(

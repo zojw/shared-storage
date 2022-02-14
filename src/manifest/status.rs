@@ -12,30 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod bucket;
-mod reader;
-mod server;
-mod status;
-mod storage;
-mod uploader;
 
-pub use storage::{CacheStorage, MemCacheStore};
-pub use uploader::Uploader;
-
-pub mod cachepb {
-    tonic::include_proto!("engula.storage.v1.cache");
-}
-
-pub use bucket::CacheNodeBucketService;
-pub use reader::CacheReader;
-pub use status::CacheStatus;
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}

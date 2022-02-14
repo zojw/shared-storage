@@ -23,6 +23,7 @@ use super::{
         DeleteBucketRequest, DeleteBucketResponse, ListBucketsRequest, ListBucketsResponse,
         ListObjectsRequest, ListObjectsResponse,
     },
+    status::CacheStatus,
     CacheStorage,
 };
 use crate::cache::cachepb::bucket_service_server::BucketService;
@@ -32,14 +33,18 @@ where
     L: CacheStorage,
 {
     local_store: Arc<L>,
+    status: Arc<CacheStatus<L>>,
 }
 
 impl<L> CacheNodeBucketService<L>
 where
     L: CacheStorage,
 {
-    pub fn new(local_store: Arc<L>) -> Self {
-        Self { local_store }
+    pub fn new(local_store: Arc<L>, status: Arc<CacheStatus<L>>) -> Self {
+        Self {
+            local_store,
+            status,
+        }
     }
 }
 
@@ -54,6 +59,7 @@ where
     ) -> Result<Response<CreateBucketResponse>, Status> {
         let bucket = request.get_ref().bucket.to_owned();
         self.local_store.create_bucket(&bucket).await?;
+        self.status.add_bucket(&bucket).await;
         Ok(Response::new(CreateBucketResponse {}))
     }
 
@@ -72,6 +78,7 @@ where
     ) -> Result<Response<DeleteBlobResponse>, Status> {
         let DeleteBlobRequest { bucket, blob } = request.get_ref().to_owned();
         self.local_store.delete_object(&bucket, &blob).await?;
+        self.status.delete_blob(&bucket, &blob).await;
         Ok(Response::new(DeleteBlobResponse {}))
     }
 

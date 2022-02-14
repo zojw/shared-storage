@@ -54,12 +54,12 @@ message ListBlobsResponse { repeated string blobs = 1; }
 
 message HeartbeatRequest {
   uint32 server_id = 1;
-  uint64 beat_seq = 2;
-  uint64 last_beat_seq = 3;
+  uint64 current_seq = 2;
+  uint64 last_seq = 3;
 }
 
 message HeartbeatResponse {
-  uint64 beat_seq = 1;
+  uint64 current_seq = 1;
   Status status = 2;
 }
 

@@ -126,9 +126,9 @@ where
         });
     }
 
-    pub async fn fetch_change_event(&self, last_ts: u64, current_ts: u64) -> cachepb::CacheEvent {
+    pub async fn fetch_change_event(&self, last_seq: u64, current_seq: u64) -> cachepb::CacheEvent {
         let mut inner = self.inner.lock().await;
-        let ev = if last_ts != inner.last_heartbeat {
+        let ev = if last_seq != inner.last_heartbeat {
             // new started or fetch but fail to apply manifest-service.
             let bucket_added = inner.buckets.iter().cloned().collect::<Vec<String>>();
 
@@ -179,7 +179,7 @@ where
             }
             delat_ev
         };
-        inner.last_heartbeat = current_ts;
+        inner.last_heartbeat = current_seq;
         inner.delta = Vec::new();
         ev
     }

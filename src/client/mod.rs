@@ -37,7 +37,10 @@ mod tests {
     use crate::{
         blobstore::MemBlobStore,
         cache::{
-            cachepb::bucket_service_client::BucketServiceClient as CacheBucketServiceClient,
+            cachepb::{
+                bucket_service_client::BucketServiceClient as CacheBucketServiceClient,
+                cache_node_service_client::CacheNodeServiceClient,
+            },
             CacheStatus, MemCacheStore, Uploader,
         },
         client::{apipb, client::Client},
@@ -69,6 +72,7 @@ mod tests {
         let cache_reader = build_cache_reader().await?;
         let cache_bucket =
             build_cache_bucket_mng(local_store.clone(), cache_status.clone()).await?;
+        let cache_node = build_cache_node_mng(cache_status).await?;
 
         // 2. manifest server manage cache node and blob_store(grpc service)
         let meta_store = MemBlobMetaStore::new(blob_store.clone()).await?;
@@ -198,6 +202,34 @@ mod tests {
             }))
             .await?;
         let client = CacheBucketServiceClient::new(channel);
+        Ok(client)
+    }
+
+    async fn build_cache_node_mng(
+        status: Arc<CacheStatus<MemCacheStore>>,
+    ) -> Result<CacheNodeServiceClient<Channel>> {
+        let (client, server) = tokio::io::duplex(1024);
+        let svc = crate::cache::CacheNode::new(status);
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(
+                    crate::cache::cachepb::cache_node_service_server::CacheNodeServiceServer::new(
+                        svc,
+                    ),
+                )
+                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
+                    MockStream(server),
+                )]))
+                .await
+        });
+        let mut client = Some(client);
+        let channel = Endpoint::try_from("http://[::]:50056")?
+            .connect_with_connector(tower::service_fn(move |_: Uri| {
+                let client = client.take().unwrap();
+                async move { Ok::<_, std::io::Error>(MockStream(client)) }
+            }))
+            .await?;
+        let client = CacheNodeServiceClient::new(channel);
         Ok(client)
     }
 

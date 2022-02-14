@@ -13,6 +13,7 @@
 // limitations under the License.
 
 mod bucket;
+mod node;
 mod reader;
 mod server;
 mod status;
@@ -27,15 +28,6 @@ pub mod cachepb {
 }
 
 pub use bucket::CacheNodeBucketService;
+pub use node::CacheNode;
 pub use reader::CacheReader;
 pub use status::CacheStatus;
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}

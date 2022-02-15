@@ -16,8 +16,11 @@ use std::{collections::HashSet, sync::Arc};
 
 use tokio::sync::Mutex;
 
-use super::{cachepb, storage};
-use crate::error::Result;
+use super::{
+    cachepb::{self, cache_event::EventType},
+    storage,
+};
+use crate::{cache::cachepb::cache_events, error::Result};
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 struct BucketBlob {
@@ -126,58 +129,62 @@ where
         });
     }
 
-    pub async fn fetch_change_event(&self, last_seq: u64, current_seq: u64) -> cachepb::CacheEvent {
+    pub async fn fetch_change_event(
+        &self,
+        last_seq: u64,
+        current_seq: u64,
+    ) -> cachepb::CacheEvents {
         let mut inner = self.inner.lock().await;
         let ev = if last_seq != inner.last_heartbeat {
             // new started or fetch but fail to apply manifest-service.
-            let bucket_added = inner.buckets.iter().cloned().collect::<Vec<String>>();
+            let bucket_added = inner.buckets.iter().cloned().map(|b| cachepb::CacheEvent {
+                typ: cachepb::cache_event::EventType::AddBucket.into(),
+                bucket: b.to_owned(),
+                blob: "".to_owned(),
+            });
 
-            let blob_added = inner
-                .blobs
-                .iter()
-                .cloned()
-                .map(|b| cachepb::BucketBlob {
-                    bucket: b.bucket.to_owned(),
-                    blob: b.blob.to_owned(),
-                })
-                .collect::<Vec<cachepb::BucketBlob>>();
+            let blob_added = inner.blobs.iter().cloned().map(|b| cachepb::CacheEvent {
+                typ: EventType::AddBlob.into(),
+                bucket: b.bucket.to_owned(),
+                blob: b.blob.to_owned(),
+            });
 
-            cachepb::CacheEvent {
-                typ: cachepb::cache_event::EventType::Full.into(),
-                bucket_added,
-                bucket_delete: vec![],
-                blob_added,
-                blob_delete: vec![],
+            let events = bucket_added.chain(blob_added).collect();
+
+            cachepb::CacheEvents {
+                mode: cache_events::EventMode::Full.into(),
+                events,
             }
         } else {
-            let mut delat_ev = cachepb::CacheEvent {
-                typ: cachepb::cache_event::EventType::Increment.into(),
-                bucket_added: vec![],
-                bucket_delete: vec![],
-                blob_added: vec![],
-                blob_delete: vec![],
-            };
+            let mut events = Vec::new();
             for de in &inner.delta {
                 match de {
-                    Event::AddBucket { bucket } => delat_ev.bucket_added.push(bucket.to_owned()),
-                    Event::DeleteBucket { bucket } => {
-                        delat_ev.bucket_delete.push(bucket.to_owned())
-                    }
-                    Event::AddBlob { bucket, blob } => {
-                        delat_ev.blob_added.push(cachepb::BucketBlob {
-                            bucket: bucket.to_owned(),
-                            blob: blob.to_owned(),
-                        })
-                    }
-                    Event::DeleteBlob { bucket, blob } => {
-                        delat_ev.blob_delete.push(cachepb::BucketBlob {
-                            bucket: bucket.to_owned(),
-                            blob: blob.to_owned(),
-                        })
-                    }
+                    Event::AddBucket { bucket } => events.push(cachepb::CacheEvent {
+                        typ: cachepb::cache_event::EventType::AddBucket.into(),
+                        bucket: bucket.to_owned(),
+                        blob: "".to_owned(),
+                    }),
+                    Event::DeleteBucket { bucket } => events.push(cachepb::CacheEvent {
+                        typ: cachepb::cache_event::EventType::DeleteBucket.into(),
+                        bucket: bucket.to_owned(),
+                        blob: "".to_owned(),
+                    }),
+                    Event::AddBlob { bucket, blob } => events.push(cachepb::CacheEvent {
+                        typ: cachepb::cache_event::EventType::AddBlob.into(),
+                        bucket: bucket.to_owned(),
+                        blob: blob.to_owned(),
+                    }),
+                    Event::DeleteBlob { bucket, blob } => events.push(cachepb::CacheEvent {
+                        typ: cachepb::cache_event::EventType::DeleteBlob.into(),
+                        bucket: bucket.to_owned(),
+                        blob: blob.to_owned(),
+                    }),
                 }
             }
-            delat_ev
+            cachepb::CacheEvents {
+                mode: cache_events::EventMode::Increment.into(),
+                events,
+            }
         };
         inner.last_heartbeat = current_seq;
         inner.delta = Vec::new();

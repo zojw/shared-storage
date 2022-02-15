@@ -53,13 +53,13 @@ where
             current_seq,
         } = request.get_ref().to_owned();
 
-        let cache_event = self.status.fetch_change_event(last_seq, current_seq).await;
+        let events = Some(self.status.fetch_change_event(last_seq, current_seq).await);
 
         Ok(Response::new(HeartbeatResponse {
             current_seq,
             status: Some(cachepb::Status {
                 server_id: server_id,
-                cache_event: Some(cache_event),
+                events,
             }),
         }))
     }

@@ -82,6 +82,8 @@ impl Client {
             bucket: bucket.to_owned(),
             blob: blob.to_owned(),
             content, // TODO: split content if it over boundary?
+            request_server_id: locations[0].stores[0],
+            replica_servers: locations[0].stores.to_owned(),
         });
         self.get_uploader(&locations[0]).await?.upload(up).await?;
 

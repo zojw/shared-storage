@@ -114,6 +114,8 @@ message BlobRequest {
 	string bucket = 1;
 	string blob = 2;
 	bytes content = 3;
+	uint32 request_server_id = 4;
+	repeated uint32 replica_servers = 5;
 }
 
 message BlobResponse {}

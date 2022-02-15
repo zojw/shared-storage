@@ -12,23 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod bucket;
-mod node;
-mod reader;
-mod replica;
-mod server;
-mod status;
-mod storage;
-mod uploader;
+use async_trait::async_trait;
 
-pub use storage::{CacheStorage, MemCacheStore, ObjectPutter};
-pub use uploader::Uploader;
+use crate::{cache::storage::PutOptions, error::Result};
 
-pub mod cachepb {
-    tonic::include_proto!("engula.storage.v1.cache");
+struct CacheReplica {
+    current_srv: u32,
 }
 
-pub use bucket::CacheNodeBucketService;
-pub use node::CacheNode;
-pub use reader::CacheReader;
-pub use status::CacheStatus;
+impl CacheReplica {
+    pub fn new(current_srv: u32) -> Self {
+        Self { current_srv }
+    }
+}
+
+#[async_trait]
+impl super::ObjectPutter for CacheReplica {
+    async fn put_object(
+        &self,
+        bucket: &str,
+        object: &str,
+        content: Vec<u8>,
+        opt: Option<PutOptions>,
+    ) -> Result<()> {
+        let mut replica = opt.unwrap().replica_srv.to_owned();
+        replica.retain(|e| *e != self.current_srv);
+
+        Ok(())
+    }
+}

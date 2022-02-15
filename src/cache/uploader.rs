@@ -20,6 +20,7 @@ use tonic::{Request, Response, Status};
 use super::{
     cachepb::{self, HeartbeatRequest, HeartbeatResponse},
     status::CacheStatus,
+    storage::PutOptions,
 };
 use crate::client::apipb::{self, BlobRequest, BlobResponse};
 
@@ -27,7 +28,7 @@ pub struct Uploader<C, B, R>
 where
     C: crate::cache::storage::CacheStorage,
     B: crate::blobstore::BlobStore,
-    R: crate::cache::storage::CacheStorage,
+    R: crate::cache::storage::ObjectPutter,
 {
     local_cache: Arc<C>,
     blob_store: Arc<B>,
@@ -39,7 +40,7 @@ impl<C, B, R> Uploader<C, B, R>
 where
     C: crate::cache::storage::CacheStorage,
     B: crate::blobstore::BlobStore,
-    R: crate::cache::storage::CacheStorage,
+    R: crate::cache::storage::ObjectPutter,
 {
     pub fn new(
         local_cache: Arc<C>,
@@ -61,7 +62,7 @@ impl<C, B, R> apipb::blob_uploader_server::BlobUploader for Uploader<C, B, R>
 where
     C: crate::cache::storage::CacheStorage + Send + Sync + 'static,
     B: crate::blobstore::BlobStore + Send + Sync + 'static,
-    R: crate::cache::storage::CacheStorage + Send + Sync + 'static,
+    R: crate::cache::storage::ObjectPutter + Send + Sync + 'static,
 {
     async fn upload(
         &self,
@@ -72,30 +73,28 @@ where
             .put_object(&request.bucket, &request.blob, request.content.to_owned())
             .await?;
         self.local_cache
-            .put_object(&request.bucket, &request.blob, request.content.to_owned())
+            .put_object(
+                &request.bucket,
+                &request.blob,
+                request.content.to_owned(),
+                None,
+            )
             .await?;
         if let Some(replica) = &self.replica_cache {
             // TODO: impl replica chain between cache nodes info that indicated by request.
+            let curr_srv = request.request_server_id;
+            let mut replica_srv = request.replica_servers.to_owned();
+            replica_srv.retain(|e| *e != curr_srv);
             replica
-                .put_object(&request.bucket, &request.blob, request.content.to_owned())
+                .put_object(
+                    &request.bucket,
+                    &request.blob,
+                    request.content.to_owned(),
+                    Some(PutOptions { replica_srv }),
+                )
                 .await?;
         }
         self.status.add_blob(&request.bucket, &request.blob).await;
         Ok(Response::new(BlobResponse {}))
-    }
-}
-
-#[async_trait]
-impl<C, B, R> cachepb::cache_node_service_server::CacheNodeService for Uploader<C, B, R>
-where
-    C: crate::cache::storage::CacheStorage + Send + Sync + 'static,
-    B: crate::blobstore::BlobStore + Send + Sync + 'static,
-    R: crate::cache::storage::CacheStorage + Send + Sync + 'static,
-{
-    async fn heartbeat(
-        &self,
-        _request: Request<HeartbeatRequest>,
-    ) -> Result<Response<HeartbeatResponse>, Status> {
-        todo!()
     }
 }

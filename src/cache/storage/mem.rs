@@ -20,6 +20,7 @@ use std::{
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
+use super::PutOptions;
 use crate::error::{Error, Result};
 
 type Object = Arc<Vec<u8>>;
@@ -83,21 +84,6 @@ impl super::CacheStorage for MemCacheStore {
         }
     }
 
-    async fn put_object(
-        &self,
-        bucket_name: &str,
-        object_name: &str,
-        content: Vec<u8>,
-    ) -> Result<()> {
-        if let Some(bucket) = self.bucket(bucket_name).await {
-            let mut bucket = bucket.lock().await;
-            bucket.insert(object_name.to_owned(), Arc::new(content));
-            Ok(())
-        } else {
-            Err(Error::NotFound(format!("bucket '{}'", bucket_name)))?
-        }
-    }
-
     async fn read_object(&self, bucket_name: &str, object_name: &str) -> Result<Vec<u8>> {
         if let Some(bucket) = self.bucket(bucket_name).await {
             match bucket.lock().await.get(object_name) {
@@ -119,5 +105,24 @@ impl super::CacheStorage for MemCacheStore {
             bucket.remove(object_name);
         }
         Ok(())
+    }
+}
+
+#[async_trait]
+impl super::ObjectPutter for MemCacheStore {
+    async fn put_object(
+        &self,
+        bucket_name: &str,
+        object_name: &str,
+        content: Vec<u8>,
+        opt: Option<PutOptions>,
+    ) -> Result<()> {
+        if let Some(bucket) = self.bucket(bucket_name).await {
+            let mut bucket = bucket.lock().await;
+            bucket.insert(object_name.to_owned(), Arc::new(content));
+            Ok(())
+        } else {
+            Err(Error::NotFound(format!("bucket '{}'", bucket_name)))?
+        }
     }
 }

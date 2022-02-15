@@ -57,10 +57,7 @@ where
 
         Ok(Response::new(HeartbeatResponse {
             current_seq,
-            status: Some(cachepb::Status {
-                server_id: server_id,
-                events,
-            }),
+            status: Some(cachepb::Status { server_id, events }),
         }))
     }
 }

@@ -106,7 +106,7 @@ impl Client {
         let locations = loc_resp.get_ref().locations.to_owned();
 
         for loc in locations {
-            let mut reader = self.get_reader(loc.store).await?;
+            let mut reader = self.get_reader(loc.stores[0]).await?;
             let condition = Some(apipb::QueryExp {}); // TODO: detach exp to store request.
             let query_req = Request::new(apipb::QueryRequest { condition });
             let query_resp = reader.query(query_req).await?;
@@ -122,7 +122,7 @@ impl Client {
         Ok(self.blob_uploaders[0].clone())
     }
 
-    pub async fn get_reader(&self, _store: u64) -> Result<ReaderClient<Channel>> {
+    pub async fn get_reader(&self, _store: u32) -> Result<ReaderClient<Channel>> {
         // TODO: establish & cache reader for store_id.
         Ok(self.readers[0].clone())
     }

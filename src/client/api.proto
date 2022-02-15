@@ -85,7 +85,7 @@ message Location {
 	KeyRange range = 1;
 	string bucket = 2;
 	string blob = 3;
-	uint64 store = 4;
+	repeated uint32 stores = 4;
 	uint32 level = 5;
 }
 

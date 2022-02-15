@@ -15,9 +15,10 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use tokio::sync::Mutex;
 use tonic::Response;
 
-use super::{storage::MetaStorage, VersionSet};
+use super::{status::ManifestStatus, storage::MetaStorage, VersionSet};
 use crate::client::apipb;
 
 pub struct CacheServerLocator<S>
@@ -25,14 +26,18 @@ where
     S: MetaStorage,
 {
     version_set: Arc<VersionSet<S>>,
+    manifest_status: Arc<ManifestStatus>,
 }
 
 impl<S> CacheServerLocator<S>
 where
     S: MetaStorage,
 {
-    pub fn new(version_set: Arc<VersionSet<S>>) -> Self {
-        Self { version_set }
+    pub fn new(version_set: Arc<VersionSet<S>>, manifest_status: Arc<ManifestStatus>) -> Self {
+        Self {
+            version_set,
+            manifest_status,
+        }
     }
 }
 
@@ -47,7 +52,12 @@ where
     ) -> Result<tonic::Response<apipb::LocateResponse>, tonic::Status> {
         let ranges = request.get_ref().ranges.to_owned();
         let current = self.version_set.current_version().await;
-        let locations = current.get_location(ranges);
+        let mut locations = current.get_location(ranges);
+        for l in locations.iter_mut() {
+            if let Some(stores) = self.manifest_status.get_server_id(&l.bucket, &l.blob).await {
+                l.stores = stores;
+            }
+        }
         Ok(Response::new(apipb::LocateResponse { locations }))
     }
 

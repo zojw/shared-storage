@@ -61,6 +61,7 @@ where
             .collect();
 
         // TODO: real world usage should handle "split by range boundary" logic here?
+        let stores = vec![1];
         let locs: Vec<Location> = request
             .get_ref()
             .blobs
@@ -73,7 +74,7 @@ where
                 }),
                 bucket: b.bucket.to_owned(),
                 blob: b.blob.to_owned(),
-                store: 1,
+                stores: stores.to_owned(),
                 level: b.level.to_owned(),
             })
             .collect();
@@ -82,7 +83,7 @@ where
         let stg = StagingOperation {
             token: token.to_owned(),
             deadline_ts: 0, // TODO:.... handle cleanup logic.
-            locations: locs.iter().map(|l| l.store).collect(),
+            locations: stores.to_owned(),
             add_bucket: vec![],
             add_blob: blobs,
         };

@@ -14,7 +14,11 @@
 
 use std::{
     collections::{hash_map, HashMap, HashSet},
-    sync::Arc,
+    slice::SliceIndex,
+    sync::{
+        atomic::{AtomicBool, Ordering::Relaxed},
+        Arc,
+    },
     time::Duration,
 };
 
@@ -34,17 +38,18 @@ use crate::{
 
 pub struct ManifestStatus {
     heartbeat_interval: Duration,
-    delay_tasks: DelayQueue<HeartbeatTask>,
+    delay_tasks: Arc<Mutex<DelayQueue<HeartbeatTask>>>,
 
     cache_nodes: Vec<HeartbeatTarget>,
 
     inner: Arc<Mutex<Inner>>,
+    stop: AtomicBool,
 }
 
 #[derive(Clone)]
 pub struct HeartbeatTarget {
-    server_id: u32,
-    invoker: CacheNodeServiceClient<Channel>,
+    pub server_id: u32,
+    pub invoker: CacheNodeServiceClient<Channel>,
 }
 
 #[derive(Hash, PartialEq, Eq, Clone)]
@@ -66,25 +71,26 @@ struct HeartbeatTask {
 }
 
 impl ManifestStatus {
-    pub fn new(cache_nodes: Vec<HeartbeatTarget>, heartbeat_interval: Duration) -> Self {
+    pub async fn new(cache_nodes: Vec<HeartbeatTarget>, heartbeat_interval: Duration) -> Self {
         let mut s = Self {
             cache_nodes: cache_nodes.to_owned(),
             heartbeat_interval,
-            delay_tasks: DelayQueue::new(),
+            delay_tasks: Arc::new(Mutex::new(DelayQueue::new())),
             inner: Arc::new(Mutex::new(Inner {
                 seq: 0,
                 blob_loc: HashMap::new(),
                 srv_blob: HashMap::new(),
                 srv_bucket: HashMap::new(),
             })),
+            stop: AtomicBool::new(false),
         };
-        s.init(Duration::ZERO);
+        s.init(Duration::ZERO).await;
         s
     }
 
-    fn init(&mut self, interval: Duration) {
+    async fn init(&mut self, interval: Duration) {
         for n in &self.cache_nodes {
-            self.delay_tasks.insert(
+            self.delay_tasks.lock().await.insert(
                 HeartbeatTask {
                     target: n.to_owned(),
                     interval,
@@ -94,8 +100,22 @@ impl ManifestStatus {
         }
     }
 
-    pub async fn run(&mut self) -> Result<()> {
+    pub fn stop(&self) {
+        self.stop.store(true, Relaxed)
+    }
+
+    pub async fn get_server_id(&self, bucket: &str, blob: &str) -> Option<Vec<u32>> {
+        let inner = self.inner.lock().await;
+        Some(Vec::from_iter(
+            inner.blob_loc.get(bucket)?.get(blob)?.iter().cloned(),
+        ))
+    }
+
+    pub async fn run(&self) -> Result<()> {
         loop {
+            if self.stop.load(Relaxed) {
+                return Ok(());
+            }
             match self.next_task().await {
                 None => return Ok(()),
                 Some(mut expired) => {
@@ -117,7 +137,7 @@ impl ManifestStatus {
                         _ => unreachable!("unreachabler"),
                     }
 
-                    self.delay_tasks.insert(
+                    self.delay_tasks.lock().await.insert(
                         HeartbeatTask {
                             target: heartbeat.target.to_owned(),
                             interval: self.heartbeat_interval,
@@ -222,10 +242,10 @@ impl ManifestStatus {
                     };
                     let blobs = inner.blob_loc.get_mut(&ev.bucket).unwrap();
                     match blobs.entry(ev.blob.to_owned()) {
-                        hash_map::Entry::Occupied(mut ent) => {
+                        hash_map::Entry::Vacant(ent) => {
                             ent.insert(HashSet::new());
                         }
-                        hash_map::Entry::Vacant(_) => {}
+                        hash_map::Entry::Occupied(_) => {}
                     };
                     blobs.get_mut(&ev.blob).unwrap().insert(srv_id);
                 }
@@ -249,8 +269,9 @@ impl ManifestStatus {
         Ok(())
     }
 
-    async fn next_task(&mut self) -> Option<Expired<HeartbeatTask>> {
-        Some(poll_fn(|c| self.delay_tasks.poll_expired(c)).await?)
+    async fn next_task(&self) -> Option<Expired<HeartbeatTask>> {
+        let mut t = self.delay_tasks.lock().await;
+        Some(poll_fn(|c| t.poll_expired(c)).await?)
     }
 
     async fn send_heartbeat(

@@ -21,12 +21,17 @@ pub mod apipb {
 #[cfg(test)]
 mod tests {
     use std::{
+        borrow::BorrowMut,
         pin::Pin,
         sync::Arc,
         task::{Context, Poll},
+        time::Duration,
     };
 
-    use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+    use tokio::{
+        io::{AsyncRead, AsyncWrite, ReadBuf},
+        sync::Mutex,
+    };
     use tonic::transport::{server::Connected, Channel, Endpoint, Server, Uri};
 
     use super::apipb::{
@@ -46,16 +51,17 @@ mod tests {
         client::{apipb, client::Client},
         error::Result,
         manifest::{
+            self,
             manifestpb::{
                 bucket_service_client::BucketServiceClient,
                 bucket_service_server::BucketServiceServer,
             },
             storage::MemBlobMetaStore,
-            VersionSet,
+            HeartbeatTarget, ManifestStatus, VersionSet,
         },
     };
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn it_works() -> Result<()> {
         // 0. blob_store access helper (shared lib)
         let blob_store = Arc::new(MemBlobStore::default());
@@ -72,13 +78,20 @@ mod tests {
         let cache_reader = build_cache_reader().await?;
         let cache_bucket =
             build_cache_bucket_mng(local_store.clone(), cache_status.clone()).await?;
-        let cache_node = build_cache_node_mng(cache_status).await?;
 
         // 2. manifest server manage cache node and blob_store(grpc service)
         let meta_store = MemBlobMetaStore::new(blob_store.clone()).await?;
         let version_set = Arc::new(VersionSet::new(meta_store).await?);
         let blob_control = build_blob_control(version_set.clone()).await?;
-        let manifest_locator = build_manifest_locator(version_set.clone()).await?;
+        let cache_node = build_cache_node_mng(cache_status).await?;
+
+        let manifest_status = build_and_run_manifest_status(vec![HeartbeatTarget {
+            server_id: 1,
+            invoker: cache_node,
+        }])
+        .await;
+        let manifest_locator =
+            build_manifest_locator(version_set.clone(), manifest_status.clone()).await?;
         let manifest_bucket =
             build_manifest_bucket_mng(blob_store.clone(), version_set.clone(), cache_bucket)
                 .await?;
@@ -97,7 +110,25 @@ mod tests {
         client.flush("b1", "o2", b"abc".to_vec()).await?;
         let res = client.query(apipb::QueryExp {}).await?;
         assert_eq!(res.len(), 1);
+        manifest_status.clone().stop();
         Ok(())
+    }
+
+    async fn build_and_run_manifest_status(
+        cache_nodes: Vec<HeartbeatTarget>,
+    ) -> Arc<ManifestStatus> {
+        let manifest_status =
+            Arc::new(ManifestStatus::new(cache_nodes, Duration::from_millis(500)).await);
+        {
+            let status = manifest_status.clone();
+            tokio::spawn(async move {
+                let result = status.run().await;
+                if result.is_err() {
+                    //
+                }
+            });
+        }
+        manifest_status
     }
 
     async fn build_cache_uploader(
@@ -235,9 +266,10 @@ mod tests {
 
     async fn build_manifest_locator(
         vs: Arc<VersionSet<MemBlobMetaStore<MemBlobStore>>>,
+        manifest_status: Arc<ManifestStatus>,
     ) -> Result<LocatorClient<Channel>> {
         let (client, server) = tokio::io::duplex(1024);
-        let locator = crate::manifest::CacheServerLocator::new(vs);
+        let locator = crate::manifest::CacheServerLocator::new(vs, manifest_status);
         tokio::spawn(async move {
             Server::builder()
                 .add_service(apipb::locator_server::LocatorServer::new(locator))

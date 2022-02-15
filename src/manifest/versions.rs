@@ -97,7 +97,7 @@ impl Version {
                             start: ran.start.to_owned(),
                             end: ran.end.to_owned(),
                         }),
-                        store: 1, // TODO: collect store info by hearbeat.
+                        stores: vec![1], // TODO: collect store info by hearbeat.
                         level: blob.level,
                     });
                     if *level != 0 && ran.end.to_owned() <= blob.largest {

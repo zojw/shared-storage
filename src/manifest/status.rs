@@ -27,18 +27,24 @@ use crate::{
     cache::cachepb::{
         cache_event::{self, EventType},
         cache_node_service_client::CacheNodeServiceClient,
-        CacheEvent, Status,
+        CacheEvent, HeartbeatRequest, HeartbeatResponse, Status,
     },
     error::Result,
 };
 
 pub struct ManifestStatus {
-    cache_nodes: Vec<CacheNodeServiceClient<Channel>>,
-
     heartbeat_interval: Duration,
     delay_tasks: DelayQueue<HeartbeatTask>,
 
+    cache_nodes: Vec<HeartbeatTarget>,
+
     inner: Arc<Mutex<Inner>>,
+}
+
+#[derive(Clone)]
+pub struct HeartbeatTarget {
+    server_id: u32,
+    invoker: CacheNodeServiceClient<Channel>,
 }
 
 #[derive(Hash, PartialEq, Eq, Clone)]
@@ -48,28 +54,28 @@ struct BucketBlob {
 }
 
 struct Inner {
-    blob_loc: HashMap<BucketBlob, HashSet<u32>>, // {bucket + blob} -> server-id lists
-
-    srv_blob: HashMap<u32, HashSet<BucketBlob>>, // {server-id} -> [{bucket, blob}..]
+    seq: u64,
+    blob_loc: HashMap<String, HashMap<String, HashSet<u32>>>, // {bucket + blob} -> server-id lists
+    srv_blob: HashMap<u32, HashSet<BucketBlob>>,              // {server-id} -> [{bucket, blob}..]
+    srv_bucket: HashMap<u32, HashSet<String>>,                // {server-id} -> [server-id, ...]
 }
 
 struct HeartbeatTask {
-    target: CacheNodeServiceClient<Channel>,
+    target: HeartbeatTarget,
     interval: Duration,
 }
 
 impl ManifestStatus {
-    pub fn new(
-        cache_nodes: Vec<CacheNodeServiceClient<Channel>>,
-        heartbeat_interval: Duration,
-    ) -> Self {
+    pub fn new(cache_nodes: Vec<HeartbeatTarget>, heartbeat_interval: Duration) -> Self {
         let mut s = Self {
             cache_nodes: cache_nodes.to_owned(),
             heartbeat_interval,
             delay_tasks: DelayQueue::new(),
             inner: Arc::new(Mutex::new(Inner {
+                seq: 0,
                 blob_loc: HashMap::new(),
                 srv_blob: HashMap::new(),
+                srv_bucket: HashMap::new(),
             })),
         };
         s.init(Duration::ZERO);
@@ -90,18 +96,23 @@ impl ManifestStatus {
 
     pub async fn run(&mut self) -> Result<()> {
         loop {
-            match self.next().await {
+            match self.next_task().await {
                 None => return Ok(()),
                 Some(mut expired) => {
                     let heartbeat = expired.get_mut();
-                    let status = Self::send_heartbeat(heartbeat).await?;
+                    let last_seq = self.current_seq().await;
+                    let current_seq = last_seq + 1;
+                    let resp = Self::send_heartbeat(heartbeat, last_seq, current_seq).await?;
+                    let status = resp.status.unwrap();
                     let ev = status.cache_event.unwrap();
                     match ev.typ {
                         _ if ev.typ == EventType::Full as i32 => {
-                            self.apply_info(status.server_id, &ev, true).await?;
+                            self.apply_info(status.server_id, &ev, true, last_seq)
+                                .await?;
                         }
                         _ if ev.typ == EventType::Increment as i32 => {
-                            self.apply_info(status.server_id, &ev, false).await?;
+                            self.apply_info(status.server_id, &ev, false, last_seq)
+                                .await?;
                         }
                         _ => unreachable!("unreachabler"),
                     }
@@ -118,21 +129,49 @@ impl ManifestStatus {
         }
     }
 
-    async fn apply_info(&self, srv_id: u32, ev: &CacheEvent, full_mod: bool) -> Result<()> {
+    async fn current_seq(&self) -> u64 {
+        let inner = self.inner.lock().await;
+        inner.seq
+    }
+
+    async fn apply_info(
+        &self,
+        srv_id: u32,
+        ev: &CacheEvent,
+        full_mod: bool,
+        base_seq: u64,
+    ) -> Result<()> {
         let mut inner = self.inner.lock().await;
 
+        if inner.seq != base_seq {
+            // local cache has be changed by others ignore current change.
+            return Ok(());
+        }
+
         if full_mod {
-            let mut bs = Vec::new();
+            let mut wait_clean_buckets = Vec::new();
+            if let Some(buckets_in_srv) = inner.srv_bucket.get(&srv_id) {
+                for b in buckets_in_srv {
+                    wait_clean_buckets.push(b.to_owned())
+                }
+            }
+            for b in wait_clean_buckets {
+                inner.blob_loc.remove(&b);
+            }
+
+            let mut wait_clean_blobs = Vec::new();
             if let Some(blobs_in_srv) = inner.srv_blob.get(&srv_id) {
                 for b in blobs_in_srv {
-                    bs.push(BucketBlob {
+                    wait_clean_blobs.push(BucketBlob {
                         bucket: b.bucket.to_owned(),
                         blob: b.blob.to_owned(),
                     })
                 }
             }
-            for b in bs {
-                inner.blob_loc.remove(&b);
+            for b in wait_clean_blobs {
+                if let Some(blobs) = inner.blob_loc.get_mut(&b.bucket) {
+                    blobs.remove(&b.blob);
+                }
             }
         }
 
@@ -158,46 +197,64 @@ impl ManifestStatus {
             }
         }
 
-        for b in &ev.blob_added {
-            let key = BucketBlob {
-                bucket: b.bucket.to_owned(),
-                blob: b.blob.to_owned(),
-            };
-            match inner.blob_loc.entry(key.to_owned()) {
+        {
+            match inner.srv_bucket.entry(srv_id) {
                 hash_map::Entry::Vacant(ent) => {
                     ent.insert(HashSet::new());
                 }
                 hash_map::Entry::Occupied(_) => {}
-            };
-            inner.blob_loc.get_mut(&key).unwrap().insert(srv_id);
+            }
+            let buckets = inner.srv_bucket.get_mut(&srv_id).unwrap();
+            for b in &ev.bucket_added {
+                buckets.insert(b.to_owned());
+            }
+            for b in &ev.bucket_delete {
+                buckets.remove(b);
+            }
         }
 
-        for b in &ev.blob_delete {
-            let key = BucketBlob {
-                bucket: b.bucket.to_owned(),
-                blob: b.blob.to_owned(),
+        for b in &ev.blob_added {
+            match inner.blob_loc.entry(b.bucket.to_owned()) {
+                hash_map::Entry::Vacant(ent) => {
+                    ent.insert(HashMap::new());
+                }
+                hash_map::Entry::Occupied(_) => {}
             };
-            if let Some(locs) = inner.blob_loc.get_mut(&key) {
-                locs.remove(&srv_id);
+            let blobs = inner.blob_loc.get_mut(&b.bucket).unwrap();
+            match blobs.entry(b.blob.to_owned()) {
+                hash_map::Entry::Occupied(mut ent) => {
+                    ent.insert(HashSet::new());
+                }
+                hash_map::Entry::Vacant(_) => {}
+            };
+            blobs.get_mut(&b.blob).unwrap().insert(srv_id);
+        }
+        for b in &ev.blob_delete {
+            if let Some(blobs) = inner.blob_loc.get_mut(&b.bucket) {
+                if let Some(srvs) = blobs.get_mut(&b.blob) {
+                    srvs.remove(&srv_id);
+                }
             }
         }
 
         Ok(())
     }
 
-    async fn next(&mut self) -> Option<Expired<HeartbeatTask>> {
-        let n = poll_fn(|c| self.delay_tasks.poll_expired(c)).await?;
-        Some(n)
+    async fn next_task(&mut self) -> Option<Expired<HeartbeatTask>> {
+        Some(poll_fn(|c| self.delay_tasks.poll_expired(c)).await?)
     }
 
-    async fn send_heartbeat(heartbeat: &mut HeartbeatTask) -> Result<Status> {
-        let hb_req = Request::new(crate::cache::cachepb::HeartbeatRequest {
-            server_id: 0, // TODO:.. assign at orch
-            current_seq: 1,
-            last_seq: 999999,
+    async fn send_heartbeat(
+        heartbeat: &mut HeartbeatTask,
+        current_seq: u64,
+        last_seq: u64,
+    ) -> Result<HeartbeatResponse> {
+        let hb_req = Request::new(HeartbeatRequest {
+            server_id: heartbeat.target.server_id,
+            current_seq,
+            last_seq,
         });
-        let res = heartbeat.target.heartbeat(hb_req).await?;
-        let status = res.get_ref().to_owned().status.unwrap();
-        Ok(status)
+        let res = heartbeat.target.invoker.heartbeat(hb_req).await?;
+        Ok(res.get_ref().to_owned())
     }
 }

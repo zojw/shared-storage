@@ -28,7 +28,7 @@ use super::{
 };
 use crate::cache::cachepb::bucket_service_server::BucketService;
 
-pub struct CacheNodeBucketService<L>
+pub struct NodeBucketService<L>
 where
     L: CacheStorage,
 {
@@ -36,7 +36,7 @@ where
     status: Arc<CacheStatus<L>>,
 }
 
-impl<L> CacheNodeBucketService<L>
+impl<L> NodeBucketService<L>
 where
     L: CacheStorage,
 {
@@ -49,7 +49,7 @@ where
 }
 
 #[async_trait]
-impl<L> BucketService for CacheNodeBucketService<L>
+impl<L> BucketService for NodeBucketService<L>
 where
     L: CacheStorage + Sync + Send + 'static,
 {

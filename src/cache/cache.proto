@@ -28,7 +28,7 @@ service BucketService {
   rpc ListBlobs(ListBlobsRequest) returns (ListBlobsResponse) {}
 }
 
-service CacheNodeService {
+service NodeCacheManageService {
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
 }
 

@@ -30,8 +30,8 @@ use tonic::{transport::Channel, Request};
 use crate::{
     cache::cachepb::{
         cache_event::EventType, cache_events::EventMode,
-        cache_node_service_client::CacheNodeServiceClient, CacheEvent, HeartbeatRequest,
-        HeartbeatResponse,
+        node_cache_manage_service_client::NodeCacheManageServiceClient, CacheEvent,
+        HeartbeatRequest, HeartbeatResponse,
     },
     error::Result,
 };
@@ -49,7 +49,7 @@ pub struct ManifestStatus {
 #[derive(Clone)]
 pub struct HeartbeatTarget {
     pub server_id: u32,
-    pub invoker: CacheNodeServiceClient<Channel>,
+    pub invoker: NodeCacheManageServiceClient<Channel>,
 }
 
 #[derive(Hash, PartialEq, Eq, Clone)]

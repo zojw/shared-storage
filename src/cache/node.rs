@@ -22,14 +22,14 @@ use super::{
     CacheStatus, CacheStorage,
 };
 
-pub struct CacheNode<S>
+pub struct NodeCacheManager<S>
 where
     S: CacheStorage,
 {
     status: Arc<CacheStatus<S>>,
 }
 
-impl<S> CacheNode<S>
+impl<S> NodeCacheManager<S>
 where
     S: CacheStorage,
 {
@@ -39,7 +39,7 @@ where
 }
 
 #[async_trait]
-impl<S> cachepb::cache_node_service_server::CacheNodeService for CacheNode<S>
+impl<S> cachepb::node_cache_manage_service_server::NodeCacheManageService for NodeCacheManager<S>
 where
     S: CacheStorage + Sync + Send + 'static,
 {

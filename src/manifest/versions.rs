@@ -81,7 +81,6 @@ impl Version {
 
     pub fn get_location(&self, ranges: Vec<KeyRange>) -> Vec<Location> {
         use std::ops::Bound::{Excluded, Included};
-        // TODO: find location between levels.
         let mut locs = Vec::new();
         for ran in ranges {
             let levels = self.levels.get(&ran.bucket).unwrap();

@@ -28,7 +28,7 @@ pub mod cachepb {
     tonic::include_proto!("engula.storage.v1.cache");
 }
 
-pub use bucket::CacheNodeBucketService;
-pub use node::CacheNode;
+pub use bucket::NodeBucketService;
+pub use node::NodeCacheManager;
 pub use reader::CacheReader;
 pub use status::CacheStatus;

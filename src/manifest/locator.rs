@@ -18,21 +18,23 @@ use async_trait::async_trait;
 use tonic::Response;
 
 use super::{status::ManifestStatus, storage::MetaStorage, VersionSet};
-use crate::client::apipb;
+use crate::{client::apipb, discover::Discover};
 
-pub struct CacheServerLocator<S>
+pub struct CacheServerLocator<S, D>
 where
     S: MetaStorage,
+    D: Discover,
 {
     version_set: Arc<VersionSet<S>>,
-    manifest_status: Arc<ManifestStatus>,
+    manifest_status: Arc<ManifestStatus<D>>,
 }
 
-impl<S> CacheServerLocator<S>
+impl<S, D> CacheServerLocator<S, D>
 where
     S: MetaStorage,
+    D: Discover,
 {
-    pub fn new(version_set: Arc<VersionSet<S>>, manifest_status: Arc<ManifestStatus>) -> Self {
+    pub fn new(version_set: Arc<VersionSet<S>>, manifest_status: Arc<ManifestStatus<D>>) -> Self {
         Self {
             version_set,
             manifest_status,
@@ -41,9 +43,10 @@ where
 }
 
 #[async_trait]
-impl<S> apipb::locator_server::Locator for CacheServerLocator<S>
+impl<S, D> apipb::locator_server::Locator for CacheServerLocator<S, D>
 where
     S: MetaStorage + Sync + Send + 'static,
+    D: Discover + Sync + Send + 'static,
 {
     async fn locate_for_read(
         &self,

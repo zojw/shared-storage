@@ -32,14 +32,18 @@ use crate::{
         node_cache_manage_service_client::NodeCacheManageServiceClient, CacheEvent,
         HeartbeatRequest, HeartbeatResponse,
     },
+    discover::{Discover, ServiceType::NodeCacheManageSvc},
     error::Result,
 };
 
-pub struct ManifestStatus {
+pub struct ManifestStatus<D>
+where
+    D: Discover,
+{
+    discover: Arc<D>,
+
     heartbeat_interval: Duration,
     delay_tasks: Arc<Mutex<DelayQueue<HeartbeatTask>>>,
-
-    cache_nodes: Vec<HeartbeatTarget>,
 
     inner: Arc<Mutex<Inner>>,
     stop: AtomicBool,
@@ -68,10 +72,13 @@ struct HeartbeatTask {
     target: HeartbeatTarget,
 }
 
-impl ManifestStatus {
-    pub async fn new(cache_nodes: Vec<HeartbeatTarget>, heartbeat_interval: Duration) -> Self {
+impl<D> ManifestStatus<D>
+where
+    D: Discover + Sync + Send + 'static,
+{
+    pub async fn new(discover: Arc<D>, heartbeat_interval: Duration) -> Result<Self> {
         let mut s = Self {
-            cache_nodes: cache_nodes.to_owned(),
+            discover,
             heartbeat_interval,
             delay_tasks: Arc::new(Mutex::new(DelayQueue::new())),
             inner: Arc::new(Mutex::new(Inner {
@@ -82,19 +89,25 @@ impl ManifestStatus {
             })),
             stop: AtomicBool::new(false),
         };
-        s.init(Duration::ZERO).await;
-        s
+        s.init(Duration::ZERO).await?;
+        Ok(s)
     }
 
-    async fn init(&mut self, interval: Duration) {
-        for n in &self.cache_nodes {
+    async fn init(&mut self, interval: Duration) -> Result<()> {
+        let svc = self.discover.list(NodeCacheManageSvc).await?;
+        for s in svc {
+            let n = NodeCacheManageServiceClient::new(s.channel.clone());
             self.delay_tasks.lock().await.insert(
                 HeartbeatTask {
-                    target: n.to_owned(),
+                    target: HeartbeatTarget {
+                        server_id: s.server_id,
+                        invoker: n,
+                    },
                 },
                 interval,
             );
         }
+        Ok(())
     }
 
     pub fn stop(&self) {

@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tonic::{transport::Channel, Request, Response, Status};
+use tonic::{Request, Response, Status};
 
 use super::{
     manifestpb::{
@@ -27,46 +27,53 @@ use super::{
     VersionSet,
 };
 use crate::{
-    blobstore::BlobStore, cache::cachepb::bucket_service_client::BucketServiceClient,
+    blobstore::BlobStore,
+    cache::cachepb::bucket_service_client::BucketServiceClient,
+    discover::{Discover, Svc},
     manifest::manifestpb,
 };
 
 // Endpoint for manage bucket information.
 // It will keep consistent between blobstore and localstores(both old or new
 // addded).
-pub struct BucketService<B, M>
+pub struct BucketService<B, M, D>
 where
     M: MetaStorage,
     B: BlobStore,
+    D: Discover,
 {
     blob_store: Arc<B>,
     version_set: Arc<VersionSet<M>>,
-    bucket_in_caches: Vec<BucketServiceClient<Channel>>,
+    discover: Arc<D>,
 }
 
-impl<B, M> BucketService<B, M>
+impl<B, M, D> BucketService<B, M, D>
 where
     M: MetaStorage,
     B: BlobStore,
+    D: Discover,
 {
-    pub fn new(
-        blob_store: Arc<B>,
-        version_set: Arc<VersionSet<M>>,
-        bucket_in_caches: Vec<BucketServiceClient<Channel>>,
-    ) -> Self {
+    pub fn new(blob_store: Arc<B>, version_set: Arc<VersionSet<M>>, discover: Arc<D>) -> Self {
         Self {
             blob_store,
             version_set,
-            bucket_in_caches,
+            discover,
         }
+    }
+
+    async fn get_node_bucket_svc(&self) -> crate::error::Result<Vec<Svc>> {
+        self.discover
+            .list(crate::discover::ServiceType::NodeBucketSvc)
+            .await
     }
 }
 
 #[async_trait]
-impl<B, M> manifestpb::bucket_service_server::BucketService for BucketService<B, M>
+impl<B, M, D> manifestpb::bucket_service_server::BucketService for BucketService<B, M, D>
 where
     M: MetaStorage + Sync + Send + 'static,
     B: BlobStore + Sync + Send + 'static,
+    D: Discover + Sync + Send + 'static,
 {
     async fn create_bucket(
         &self,
@@ -100,12 +107,12 @@ where
         self.blob_store.create_bucket(&bucket_name).await?;
 
         // create bucket in each cache nodes.
-        for i in 0..self.bucket_in_caches.len() {
-            let mut cache = self.bucket_in_caches.get(i).unwrap().clone();
+        for svc in &self.get_node_bucket_svc().await? {
+            let mut client = BucketServiceClient::new(svc.channel.clone());
             let req = Request::new(crate::cache::cachepb::CreateBucketRequest {
                 bucket: bucket_name.to_owned(),
             });
-            cache.create_bucket(req).await?;
+            client.create_bucket(req).await?;
         }
 
         // commit create bucket in meta.
@@ -145,12 +152,12 @@ where
         let _ = {
             self.blob_store.delete_bucket(&bucket_name).await?;
 
-            for i in 0..self.bucket_in_caches.len() {
-                let mut cache = self.bucket_in_caches.get(i).unwrap().clone();
+            for svc in self.get_node_bucket_svc().await? {
+                let mut client = BucketServiceClient::new(svc.channel.clone());
                 let req = Request::new(crate::cache::cachepb::DeleteBucketRequest {
                     bucket: bucket_name.to_owned(),
                 });
-                cache.delete_bucket(req).await?;
+                client.delete_bucket(req).await?;
             }
         };
 
@@ -206,13 +213,13 @@ where
             let _ = {
                 self.blob_store.delete_object(bucket, blob).await?;
 
-                for i in 0..self.bucket_in_caches.len() {
-                    let mut cache = self.bucket_in_caches.get(i).unwrap().clone();
+                for svc in self.get_node_bucket_svc().await? {
+                    let mut client = BucketServiceClient::new(svc.channel.clone());
                     let req = Request::new(crate::cache::cachepb::DeleteBlobRequest {
                         bucket: bucket.to_owned(),
                         blob: blob.to_owned(),
                     });
-                    cache.delete_blob(req).await?;
+                    client.delete_blob(req).await?;
                 }
             };
         }

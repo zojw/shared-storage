@@ -20,44 +20,28 @@ pub mod apipb {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        pin::Pin,
-        sync::Arc,
-        task::{Context, Poll},
-        time::Duration,
-    };
-
-    use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
-    use tonic::transport::{server::Connected, Channel, Endpoint, Server, Uri};
+    use std::{sync::Arc, time::Duration};
 
     use super::apipb::{
-        blob_upload_control_client::BlobUploadControlClient,
         blob_upload_control_server::BlobUploadControlServer,
-        blob_uploader_client::BlobUploaderClient, blob_uploader_server::BlobUploaderServer,
-        locator_client::LocatorClient, locator_server::LocatorServer, reader_client::ReaderClient,
+        blob_uploader_server::BlobUploaderServer, locator_server::LocatorServer,
     };
     use crate::{
         blobstore::MemBlobStore,
         cache::{
             cachepb::{
-                bucket_service_client::BucketServiceClient as NodeBucketServiceClient,
                 bucket_service_server::BucketServiceServer as NodeBucketServiceServer,
-                node_cache_manage_service_client::NodeCacheManageServiceClient,
                 node_cache_manage_service_server::NodeCacheManageServiceServer,
             },
             CacheStatus, MemCacheStore, NodeBucketService, NodeCacheManager, Uploader,
         },
         client::{apipb, cli::Client},
-        discovery::{local::LocalSvcDiscovery, Discovery, ServiceType},
+        discover::{Discover, LocalSvcDiscover},
         error::Result,
         manifest::{
-            manifestpb::{
-                bucket_service_client::BucketServiceClient as ManifestBucketServiceClient,
-                bucket_service_server::BucketServiceServer as ManifestBucketServiceServer,
-            },
-            storage::MemBlobMetaStore,
-            BlobControl, BucketService, CacheServerLocator, HeartbeatTarget, ManifestStatus,
-            VersionSet,
+            manifestpb::bucket_service_server::BucketServiceServer as ManifestBucketServiceServer,
+            storage::MemBlobMetaStore, BlobControl, BucketService, CacheServerLocator,
+            ManifestStatus, VersionSet,
         },
     };
 
@@ -65,11 +49,11 @@ mod tests {
     async fn it_works() -> Result<()> {
         // 0. blob_store access helper (shared lib)
         let blob_store = Arc::new(MemBlobStore::default());
-        let discovery = LocalSvcDiscovery::default();
+        let discover = Arc::new(LocalSvcDiscover::default());
 
         // 1. cache node above blob_store(grpc service)
         // 1.1. setup cache-node-1 svc
-        let cache_node1_id = {
+        let _cache_node1_id = {
             let local_store = Arc::new(MemCacheStore::default());
             let cache_status = Arc::new(CacheStatus::new(local_store.clone()).await?);
             let uploader: Uploader<MemCacheStore, MemBlobStore, MemCacheStore> = Uploader::new(
@@ -88,7 +72,7 @@ mod tests {
                 NodeCacheManageServiceServer::new(NodeCacheManager::new(cache_status));
 
             let srv_id = 1;
-            discovery
+            discover
                 .register_cache_node_svc(
                     srv_id,
                     node_cache_mng_svc,
@@ -102,7 +86,7 @@ mod tests {
         };
 
         // 1.2. setup cache node-2 svc
-        let cache_node2_id = {
+        let _cache_node2_id = {
             let local_store = Arc::new(MemCacheStore::default());
             let cache_status = Arc::new(CacheStatus::new(local_store.clone()).await?);
             let uploader: Uploader<MemCacheStore, MemBlobStore, MemCacheStore> = Uploader::new(
@@ -121,7 +105,7 @@ mod tests {
                 NodeCacheManageServiceServer::new(NodeCacheManager::new(cache_status));
 
             let srv_id = 2;
-            discovery
+            discover
                 .register_cache_node_svc(
                     srv_id,
                     node_cache_mng_svc,
@@ -140,36 +124,21 @@ mod tests {
             let version_set = Arc::new(VersionSet::new(meta_store).await?);
             let blob_ctrl_svc = BlobUploadControlServer::new(BlobControl::new(version_set.clone()));
 
-            let node_cache_svc = discovery
-                .list(ServiceType::NodeCacheManageSvc)
-                .await?
-                .iter()
-                .map(|s| HeartbeatTarget {
-                    server_id: s.server_id,
-                    invoker: NodeCacheManageServiceClient::new(s.channel.clone()),
-                })
-                .collect::<Vec<HeartbeatTarget>>();
-            let manifest_status = build_and_run_manifest_status(node_cache_svc).await;
+            let manifest_status = build_and_run_manifest_status(discover.clone()).await?;
 
             let locator_svc = LocatorServer::new(CacheServerLocator::new(
                 version_set.clone(),
                 manifest_status.clone(),
             ));
 
-            let bucket_in_caches = discovery
-                .list(ServiceType::NodeBucketSvc)
-                .await?
-                .iter()
-                .map(|s| NodeBucketServiceClient::new(s.channel.clone()))
-                .collect::<Vec<NodeBucketServiceClient<Channel>>>();
             let cluster_bucket_svc = ManifestBucketServiceServer::new(BucketService::new(
                 blob_store,
                 version_set,
-                bucket_in_caches,
+                discover.clone(),
             ));
 
             let srv_id = 3;
-            discovery
+            discover
                 .register_manifest_svc(srv_id, blob_ctrl_svc, cluster_bucket_svc, locator_svc)
                 .await;
 
@@ -178,31 +147,7 @@ mod tests {
 
         // 3. client use mainifest & cache node(lib).
         {
-            let (blob_ctrl_svc, manifest_locator_svc, manifest_bucket_svc) = (
-                &discovery.list(ServiceType::ManifestBlobCtrl).await?[0],
-                &discovery.list(ServiceType::ManifestLocatorSvc).await?[0],
-                &discovery.list(ServiceType::ManifestBucketSvc).await?[0],
-            );
-            let blob_ctrl = BlobUploadControlClient::new(blob_ctrl_svc.channel.clone());
-            let locator = LocatorClient::new(manifest_locator_svc.channel.clone());
-            let manifest_bucket =
-                ManifestBucketServiceClient::new(manifest_bucket_svc.channel.clone());
-
-            let (upload_svc, read_svc) = (
-                discovery
-                    .list(ServiceType::NodeUploadSvc)
-                    .await?
-                    .iter()
-                    .map(|s| BlobUploaderClient::new(s.channel.clone()))
-                    .collect::<Vec<_>>(),
-                discovery
-                    .list(ServiceType::NodeReadSvc)
-                    .await?
-                    .iter()
-                    .map(|s| ReaderClient::new(s.channel.clone()))
-                    .collect::<Vec<_>>(),
-            );
-            let mut client = Client::new(blob_ctrl, upload_svc, locator, read_svc, manifest_bucket);
+            let mut client = Client::new(discover.clone());
 
             // 4. simple test.
             client.create_bucket("b1").await?;
@@ -215,11 +160,12 @@ mod tests {
         Ok(())
     }
 
-    async fn build_and_run_manifest_status(
-        cache_nodes: Vec<HeartbeatTarget>,
-    ) -> Arc<ManifestStatus> {
+    async fn build_and_run_manifest_status<D>(discover: Arc<D>) -> Result<Arc<ManifestStatus<D>>>
+    where
+        D: Discover + Sync + Send + 'static,
+    {
         let manifest_status =
-            Arc::new(ManifestStatus::new(cache_nodes, Duration::from_millis(500)).await);
+            Arc::new(ManifestStatus::new(discover, Duration::from_millis(500)).await?);
         {
             let status = manifest_status.clone();
             tokio::spawn(async move {
@@ -229,82 +175,6 @@ mod tests {
                 }
             });
         }
-        manifest_status
-    }
-
-    use tonic::{
-        body::BoxBody,
-        codegen::http::{Request, Response},
-        transport::{Body, NamedService},
-    };
-    use tower::Service;
-
-    async fn local_bridge<S>(svc: S) -> Result<Channel>
-    where
-        S: Service<Request<Body>, Response = Response<BoxBody>>
-            + NamedService
-            + Clone
-            + Send
-            + 'static,
-        S::Future: Send + 'static,
-        S::Error: Into<Box<dyn std::error::Error + Send + Sync>> + Send,
-    {
-        let (client, server) = tokio::io::duplex(1024);
-        tokio::spawn(async move {
-            Server::builder()
-                .add_service(svc)
-                .serve_with_incoming(futures::stream::iter(vec![Ok::<_, std::io::Error>(
-                    MockStream(server),
-                )]))
-                .await
-        });
-        let mut client = Some(client);
-        let channel = Endpoint::try_from("http://[::]:50051")?
-            .connect_with_connector(tower::service_fn(move |_: Uri| {
-                let client = client.take().unwrap();
-                async move { Ok::<_, std::io::Error>(MockStream(client)) }
-            }))
-            .await?;
-        Ok(channel)
-    }
-
-    #[derive(Debug)]
-    pub struct MockStream(pub tokio::io::DuplexStream);
-
-    impl Connected for MockStream {
-        type ConnectInfo = ();
-
-        fn connect_info(&self) -> Self::ConnectInfo {}
-    }
-
-    impl AsyncRead for MockStream {
-        fn poll_read(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context<'_>,
-            buf: &mut ReadBuf<'_>,
-        ) -> Poll<std::io::Result<()>> {
-            Pin::new(&mut self.0).poll_read(cx, buf)
-        }
-    }
-
-    impl AsyncWrite for MockStream {
-        fn poll_write(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context<'_>,
-            buf: &[u8],
-        ) -> Poll<std::io::Result<usize>> {
-            Pin::new(&mut self.0).poll_write(cx, buf)
-        }
-
-        fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
-            Pin::new(&mut self.0).poll_flush(cx)
-        }
-
-        fn poll_shutdown(
-            mut self: Pin<&mut Self>,
-            cx: &mut Context<'_>,
-        ) -> Poll<std::io::Result<()>> {
-            Pin::new(&mut self.0).poll_shutdown(cx)
-        }
+        Ok(manifest_status)
     }
 }

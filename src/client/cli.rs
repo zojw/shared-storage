@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use tonic::{transport::Channel, Request};
 
 use super::apipb::{
@@ -20,6 +22,7 @@ use super::apipb::{
     reader_client::ReaderClient, KeyRange, Location, PrepareUploadResponse,
 };
 use crate::{
+    discover::{Discover, ServiceType},
     error::Result,
     manifest::{
         manifestpb::{bucket_service_client::BucketServiceClient, CreateBucketRequest},
@@ -27,32 +30,25 @@ use crate::{
     },
 };
 
-pub struct Client {
-    blob_controller: BlobUploadControlClient<Channel>,
-    blob_uploaders: Vec<BlobUploaderClient<Channel>>,
-    locator: LocatorClient<Channel>,
-    readers: Vec<ReaderClient<Channel>>,
-    bucket_mng: BucketServiceClient<Channel>,
+pub struct Client<D>
+where
+    D: Discover,
+{
+    discover: Arc<D>,
 }
 
-impl Client {
-    pub fn new(
-        blob_controller: BlobUploadControlClient<Channel>,
-        blob_uploaders: Vec<BlobUploaderClient<Channel>>,
-        locator: LocatorClient<Channel>,
-        readers: Vec<ReaderClient<Channel>>,
-        bucket_mng: BucketServiceClient<Channel>,
-    ) -> Self {
-        Self {
-            blob_controller,
-            blob_uploaders,
-            locator,
-            readers,
-            bucket_mng,
-        }
+impl<D> Client<D>
+where
+    D: Discover,
+{
+    pub fn new(discover: Arc<D>) -> Self {
+        Self { discover }
     }
 
     pub async fn flush(&mut self, bucket: &str, blob: &str, content: Vec<u8>) -> Result<()> {
+        let blob_ctrl_svc = self.discover.list(ServiceType::ManifestBlobCtrl).await?;
+        let blob_controller = BlobUploadControlClient::new(blob_ctrl_svc[0].channel.clone());
+
         // prepare blob updload.
         let base_level: u32 = 0; // TODO: smart choose base level.
         let new_blob = NewBlob {
@@ -71,7 +67,7 @@ impl Client {
         let prep = Request::new(apipb::PrepareUploadRequest {
             blobs: vec![new_blob],
         });
-        let resp = self.blob_controller.prepare_upload(prep).await?;
+        let resp = blob_controller.clone().prepare_upload(prep).await?;
         let PrepareUploadResponse {
             upload_token,
             locations,
@@ -89,7 +85,7 @@ impl Client {
 
         // commit blob data.
         let fin = Request::new(apipb::FinishUploadRequest { upload_token });
-        self.blob_controller.finish_upload(fin).await?;
+        blob_controller.clone().finish_upload(fin).await?;
 
         Ok(())
     }
@@ -104,7 +100,9 @@ impl Client {
             }],
         });
         let mut result = Vec::new();
-        let loc_resp = self.locator.locate_for_read(loc_req).await?;
+        let locator_svc = self.discover.list(ServiceType::ManifestLocatorSvc).await?;
+        let mut locator = LocatorClient::new(locator_svc[0].channel.clone());
+        let loc_resp = locator.locate_for_read(loc_req).await?;
         let locations = loc_resp.get_ref().locations.to_owned();
 
         for loc in locations {
@@ -119,21 +117,29 @@ impl Client {
         Ok(result)
     }
 
-    pub async fn get_uploader(&self, _loc: &Location) -> Result<BlobUploaderClient<Channel>> {
+    async fn get_uploader(&self, _loc: &Location) -> Result<BlobUploaderClient<Channel>> {
         // TODO: it should be factorization and route right uploader by _loc
-        Ok(self.blob_uploaders[0].clone())
+        let upload_svc = self.discover.list(ServiceType::NodeUploadSvc).await?;
+        let blob_uploader = crate::client::apipb::blob_uploader_client::BlobUploaderClient::new(
+            upload_svc[0].channel.clone(),
+        );
+        Ok(blob_uploader)
     }
 
-    pub async fn get_reader(&self, _store: u32) -> Result<ReaderClient<Channel>> {
+    async fn get_reader(&self, _store: u32) -> Result<ReaderClient<Channel>> {
         // TODO: establish & cache reader for store_id.
-        Ok(self.readers[0].clone())
+        let read_svc = self.discover.list(ServiceType::NodeReadSvc).await?;
+        let reader = ReaderClient::new(read_svc[0].channel.clone());
+        Ok(reader)
     }
 
     pub async fn create_bucket(&mut self, bucket_name: &str) -> Result<()> {
         let req = Request::new(CreateBucketRequest {
             bucket: bucket_name.to_owned(),
         });
-        self.bucket_mng.create_bucket(req).await?;
+        let bucket_mng_svc = self.discover.list(ServiceType::ManifestBucketSvc).await?;
+        let mut bucket_mng = BucketServiceClient::new(bucket_mng_svc[0].channel.clone());
+        bucket_mng.create_bucket(req).await?;
         Ok(())
     }
 }

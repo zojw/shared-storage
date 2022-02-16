@@ -12,11 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(type_alias_impl_trait)]
+mod local;
 
-mod blobstore;
-mod cache;
-mod client;
-mod discover;
-mod error;
-mod manifest;
+use async_trait::async_trait;
+pub use local::LocalSvcDiscover;
+use tonic::transport::Channel;
+
+use crate::error::Result;
+
+#[async_trait]
+pub trait Discover {
+    async fn list(&self, svc_type: ServiceType) -> Result<Vec<Svc>>;
+}
+
+pub enum ServiceType {
+    NodeCacheManageSvc = 1,
+    NodeBucketSvc = 2,
+    NodeUploadSvc = 3,
+    NodeReadSvc = 4,
+    ManifestBlobCtrl = 5,
+    ManifestBucketSvc = 6,
+    ManifestLocatorSvc = 7,
+}
+
+pub struct Svc {
+    pub server_id: u32,
+    pub channel: Channel,
+}

@@ -20,6 +20,7 @@ struct CacheReplica {
     current_srv: u32,
 }
 
+#[allow(dead_code)]
 impl CacheReplica {
     pub fn new(current_srv: u32) -> Self {
         Self { current_srv }
@@ -30,12 +31,12 @@ impl CacheReplica {
 impl super::ObjectPutter for CacheReplica {
     async fn put_object(
         &self,
-        bucket: &str,
-        object: &str,
-        content: Vec<u8>,
+        _bucket: &str,
+        _object: &str,
+        _content: Vec<u8>,
         opt: Option<PutOptions>,
     ) -> Result<()> {
-        let mut replica = opt.unwrap().replica_srv.to_owned();
+        let mut replica = opt.unwrap().replica_srv;
         replica.retain(|e| *e != self.current_srv);
 
         Ok(())

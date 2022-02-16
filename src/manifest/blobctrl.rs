@@ -134,7 +134,7 @@ where
 
     async fn rollback_upload(
         &self,
-        request: Request<apipb::RollbackUploadRequest>,
+        _request: Request<apipb::RollbackUploadRequest>,
     ) -> Result<Response<apipb::RollbackUploadResponse>, Status> {
         todo!()
     }

@@ -17,9 +17,9 @@ use std::{
     sync::Arc,
 };
 
-use tokio::{sync::Mutex, time::Instant};
+use tokio::sync::Mutex;
 
-use super::{storage::MetaStorage, BlobControl};
+use super::storage::MetaStorage;
 use crate::{
     client::apipb::{KeyRange, Location},
     error::Result,
@@ -35,13 +35,7 @@ pub struct BlobDesc {
     pub largest: Vec<u8>,
 }
 
-#[derive(Clone)]
-pub struct StageDesc {
-    deadline: Instant,
-    locations: Vec<String>,
-}
-
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Version {
     // bucket -> { blob -> blob-desc }
     buckets: HashMap<String, HashMap<String, BlobDesc>>,
@@ -49,16 +43,6 @@ pub struct Version {
     levels: HashMap<String, BTreeMap<u32, BTreeMap<Vec<u8>, BlobDesc>>>,
     // token -> stage-operation
     staging_op: BTreeMap<String, StagingOperation>,
-}
-
-impl Default for Version {
-    fn default() -> Self {
-        Self {
-            buckets: HashMap::new(),
-            levels: HashMap::new(),
-            staging_op: BTreeMap::new(),
-        }
-    }
 }
 
 impl Version {
@@ -99,7 +83,7 @@ impl Version {
                         stores: vec![1], // TODO: collect store info by hearbeat.
                         level: blob.level,
                     });
-                    if *level != 0 && ran.end.to_owned() <= blob.largest {
+                    if *level != 0 && ran.end <= blob.largest {
                         break;
                     }
                 }
@@ -261,7 +245,7 @@ where
             vs.push(Arc::new(new_version.as_ref().clone()))
         }
 
-        return Ok(new_version);
+        Ok(new_version)
     }
 
     pub async fn current_version(&self) -> Arc<Version> {
@@ -269,13 +253,5 @@ where
         let vs = versions.lock().await;
         let v = &vs[vs.len() - 1];
         v.clone()
-    }
-
-    async fn append(&self, v: Version) -> Arc<Version> {
-        let v = Arc::new(v);
-        let versions = self.versions.clone();
-        let mut vs = versions.lock().await;
-        vs.push(v.clone());
-        v
     }
 }

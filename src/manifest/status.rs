@@ -14,7 +14,6 @@
 
 use std::{
     collections::{hash_map, HashMap, HashSet},
-    slice::SliceIndex,
     sync::{
         atomic::{AtomicBool, Ordering::Relaxed},
         Arc,
@@ -67,7 +66,6 @@ struct Inner {
 
 struct HeartbeatTask {
     target: HeartbeatTarget,
-    interval: Duration,
 }
 
 impl ManifestStatus {
@@ -93,7 +91,6 @@ impl ManifestStatus {
             self.delay_tasks.lock().await.insert(
                 HeartbeatTask {
                     target: n.to_owned(),
-                    interval,
                 },
                 interval,
             );
@@ -140,7 +137,6 @@ impl ManifestStatus {
                     self.delay_tasks.lock().await.insert(
                         HeartbeatTask {
                             target: heartbeat.target.to_owned(),
-                            interval: self.heartbeat_interval,
                         },
                         self.heartbeat_interval,
                     );

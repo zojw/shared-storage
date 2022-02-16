@@ -23,7 +23,7 @@ use super::{
         DeleteBucketRequest, DeleteBucketResponse, ListBlobsRequest, ListBlobsResponse,
         ListBucketsRequest, ListBucketsResponse,
     },
-    storage::{self, DeleteBlob, MetaStorage, StagingBucket, StagingOperation, VersionEdit},
+    storage::{DeleteBlob, MetaStorage, StagingBucket, StagingOperation, VersionEdit},
     VersionSet,
 };
 use crate::{
@@ -184,7 +184,7 @@ where
 
         let current = self.version_set.current_version().await;
 
-        if let Some(blob_desc) = current.get_blob(&bucket, &blob) {
+        if let Some(blob_desc) = current.get_blob(bucket, blob) {
             // Remove blob from meta first and can return success after this step.
             self.version_set
                 .log_and_apply(vec![VersionEdit {
@@ -204,7 +204,7 @@ where
             // TODO: maybe need mantain "ZombieBlob" info to cleanup.
 
             let _ = {
-                self.blob_store.delete_object(&bucket, &blob).await?;
+                self.blob_store.delete_object(bucket, blob).await?;
 
                 for i in 0..self.bucket_in_caches.len() {
                     let mut cache = self.bucket_in_caches.get(i).unwrap().clone();

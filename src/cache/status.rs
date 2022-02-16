@@ -74,7 +74,7 @@ where
         inner.buckets = self.store.list_buckets().await?.iter().cloned().collect();
         let mut blobs = HashSet::new();
         for bucket in &inner.buckets {
-            let bs = self.store.list_objects(&bucket).await?;
+            let bs = self.store.list_objects(bucket).await?;
             for b in bs {
                 blobs.insert(BucketBlob {
                     bucket: b.to_owned(),
@@ -139,14 +139,14 @@ where
             // new started or fetch but fail to apply manifest-service.
             let bucket_added = inner.buckets.iter().cloned().map(|b| cachepb::CacheEvent {
                 typ: cachepb::cache_event::EventType::AddBucket.into(),
-                bucket: b.to_owned(),
+                bucket: b,
                 blob: "".to_owned(),
             });
 
             let blob_added = inner.blobs.iter().cloned().map(|b| cachepb::CacheEvent {
                 typ: EventType::AddBlob.into(),
-                bucket: b.bucket.to_owned(),
-                blob: b.blob.to_owned(),
+                bucket: b.bucket,
+                blob: b.blob,
             });
 
             let events = bucket_added.chain(blob_added).collect();

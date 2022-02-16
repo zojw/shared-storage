@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod client;
+mod cli;
 
 pub mod apipb {
     tonic::include_proto!("engula.storage.v1.client.api");
@@ -47,7 +47,7 @@ mod tests {
             },
             CacheStatus, MemCacheStore, NodeBucketService, NodeCacheManager, Uploader,
         },
-        client::{apipb, client::Client},
+        client::{apipb, cli::Client},
         error::Result,
         manifest::{
             manifestpb::{
@@ -82,7 +82,7 @@ mod tests {
                 cache_status.clone(),
             ));
             let node_cache_mng_svc =
-                NodeCacheManageServiceServer::new(NodeCacheManager::new(cache_status.clone()));
+                NodeCacheManageServiceServer::new(NodeCacheManager::new(cache_status));
             (upload_svc, read_svc, node_bucket_svc, node_cache_mng_svc)
         };
 

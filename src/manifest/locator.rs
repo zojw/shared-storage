@@ -15,7 +15,6 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tokio::sync::Mutex;
 use tonic::Response;
 
 use super::{status::ManifestStatus, storage::MetaStorage, VersionSet};
@@ -63,7 +62,7 @@ where
 
     async fn locate_for_compact(
         &self,
-        request: tonic::Request<apipb::LocateRequest>,
+        _request: tonic::Request<apipb::LocateRequest>,
     ) -> Result<tonic::Response<apipb::LocateResponse>, tonic::Status> {
         todo!()
     }

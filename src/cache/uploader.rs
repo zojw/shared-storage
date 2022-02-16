@@ -17,11 +17,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tonic::{Request, Response, Status};
 
-use super::{
-    cachepb::{self, HeartbeatRequest, HeartbeatResponse},
-    status::CacheStatus,
-    storage::PutOptions,
-};
+use super::{status::CacheStatus, storage::PutOptions};
 use crate::client::apipb::{self, BlobRequest, BlobResponse};
 
 pub struct Uploader<C, B, R>

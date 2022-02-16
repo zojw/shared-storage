@@ -53,7 +53,7 @@ where
         let r = self.blob_store.create_bucket(META_BUCKET_NAME).await;
         match r {
             Err(Error::AlreadyExists(_)) => Ok(()),
-            o @ _ => o,
+            o => o,
         }?;
         Ok(())
     }
@@ -66,7 +66,7 @@ where
                 .await;
             let content = match r {
                 Err(Error::NotFound(_)) => Ok(vec![]),
-                o @ _ => o,
+                o => o,
             }?;
             super::VersionEditList::decode(&content[..])?
         };

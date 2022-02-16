@@ -57,7 +57,7 @@ impl super::CacheStorage for MemCacheStore {
                 Ok(())
             }
             hash_map::Entry::Occupied(ent) => {
-                Err(Error::AlreadyExists(format!("bucket '{}'", ent.key())))?
+                Err(Error::AlreadyExists(format!("bucket '{}'", ent.key())))
             }
         }
     }
@@ -66,7 +66,7 @@ impl super::CacheStorage for MemCacheStore {
         let mut buckets = self.buckets.lock().await;
         match buckets.remove(bucket_name) {
             Some(_) => Ok(()),
-            None => Err(Error::NotFound(format!("bucket '{}'", bucket_name)))?,
+            None => Err(Error::NotFound(format!("bucket '{}'", bucket_name))),
         }
     }
 
@@ -80,7 +80,7 @@ impl super::CacheStorage for MemCacheStore {
             let bucket = bucket.lock().await;
             Ok(bucket.keys().cloned().collect())
         } else {
-            Err(Error::NotFound(format!("bucket '{}'", bucket_name)))?
+            Err(Error::NotFound(format!("bucket '{}'", bucket_name)))
         }
     }
 
@@ -92,10 +92,10 @@ impl super::CacheStorage for MemCacheStore {
                     dst.copy_from_slice(object);
                     Ok(dst)
                 }
-                None => Err(Error::NotFound(format!("object '{}'", object_name)))?,
+                None => Err(Error::NotFound(format!("object '{}'", object_name))),
             }
         } else {
-            Err(Error::NotFound(format!("bucket '{}'", bucket_name)))?
+            Err(Error::NotFound(format!("bucket '{}'", bucket_name)))
         }
     }
 
@@ -115,14 +115,14 @@ impl super::ObjectPutter for MemCacheStore {
         bucket_name: &str,
         object_name: &str,
         content: Vec<u8>,
-        opt: Option<PutOptions>,
+        _opt: Option<PutOptions>,
     ) -> Result<()> {
         if let Some(bucket) = self.bucket(bucket_name).await {
             let mut bucket = bucket.lock().await;
             bucket.insert(object_name.to_owned(), Arc::new(content));
             Ok(())
         } else {
-            Err(Error::NotFound(format!("bucket '{}'", bucket_name)))?
+            Err(Error::NotFound(format!("bucket '{}'", bucket_name)))
         }
     }
 }

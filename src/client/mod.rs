@@ -22,6 +22,8 @@ pub mod apipb {
 mod tests {
     use std::{sync::Arc, time::Duration};
 
+    use tokio::time::sleep;
+
     use super::apipb::{
         blob_upload_control_server::BlobUploadControlServer,
         blob_uploader_server::BlobUploaderServer, locator_server::LocatorServer,
@@ -33,7 +35,8 @@ mod tests {
                 bucket_service_server::BucketServiceServer as NodeBucketServiceServer,
                 node_cache_manage_service_server::NodeCacheManageServiceServer,
             },
-            CacheStatus, MemCacheStore, NodeBucketService, NodeCacheManager, Uploader,
+            CacheReplica, CacheStatus, MemCacheStore, NodeBucketService, NodeCacheManager,
+            Uploader,
         },
         client::{apipb, cli::Client},
         discover::{Discover, LocalSvcDiscover},
@@ -54,12 +57,15 @@ mod tests {
         // 1. cache node above blob_store(grpc service)
         // 1.1. setup cache-node-1 svc
         let _cache_node1_id = {
+            let srv_id = 1;
+
             let local_store = Arc::new(MemCacheStore::default());
             let cache_status = Arc::new(CacheStatus::new(local_store.clone()).await?);
-            let uploader: Uploader<MemCacheStore, MemBlobStore, MemCacheStore> = Uploader::new(
+            let cache_replica = Arc::new(CacheReplica::new(srv_id, discover.clone()));
+            let uploader = Uploader::new(
                 local_store.clone(),
                 blob_store.clone(),
-                None,
+                Some(cache_replica),
                 cache_status.clone(),
             );
             let upload_svc = BlobUploaderServer::new(uploader);
@@ -71,7 +77,6 @@ mod tests {
             let node_cache_mng_svc =
                 NodeCacheManageServiceServer::new(NodeCacheManager::new(cache_status));
 
-            let srv_id = 1;
             discover
                 .register_cache_node_svc(
                     srv_id,
@@ -87,12 +92,15 @@ mod tests {
 
         // 1.2. setup cache node-2 svc
         let _cache_node2_id = {
+            let srv_id = 2;
+
             let local_store = Arc::new(MemCacheStore::default());
             let cache_status = Arc::new(CacheStatus::new(local_store.clone()).await?);
-            let uploader: Uploader<MemCacheStore, MemBlobStore, MemCacheStore> = Uploader::new(
+            let cache_replica = Arc::new(CacheReplica::new(srv_id, discover.clone()));
+            let uploader = Uploader::new(
                 local_store.clone(),
                 blob_store.clone(),
-                None,
+                Some(cache_replica),
                 cache_status.clone(),
             );
             let upload_svc = BlobUploaderServer::new(uploader);
@@ -104,7 +112,6 @@ mod tests {
             let node_cache_mng_svc =
                 NodeCacheManageServiceServer::new(NodeCacheManager::new(cache_status));
 
-            let srv_id = 2;
             discover
                 .register_cache_node_svc(
                     srv_id,
@@ -152,6 +159,11 @@ mod tests {
             // 4. simple test.
             client.create_bucket("b1").await?;
             client.flush("b1", "o2", b"abc".to_vec()).await?;
+
+            // simple sleep wait manifest-cache node heartbeat before read
+            // TODO: this can avoid in future.
+            sleep(Duration::from_millis(1000)).await;
+
             let res = client.query(apipb::QueryExp {}).await?;
             assert_eq!(res.len(), 1);
         }

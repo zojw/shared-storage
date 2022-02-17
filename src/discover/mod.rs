@@ -23,6 +23,8 @@ use crate::error::Result;
 #[async_trait]
 pub trait Discover {
     async fn list(&self, svc_type: ServiceType) -> Result<Vec<Svc>>;
+    async fn find(&self, svc_type: ServiceType, srv_ids: Vec<u32>) -> Result<Vec<Svc>>;
+    // async fn subscribe(&self) -> Stream<()>;
 }
 
 pub enum ServiceType {
@@ -35,6 +37,7 @@ pub enum ServiceType {
     ManifestLocatorSvc = 7,
 }
 
+#[derive(Clone)]
 pub struct Svc {
     pub server_id: u32,
     pub channel: Channel,

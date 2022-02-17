@@ -21,6 +21,7 @@ mod status;
 mod storage;
 mod uploader;
 
+pub use replica::CacheReplica;
 pub use storage::{CacheStorage, MemCacheStore, ObjectPutter};
 pub use uploader::Uploader;
 

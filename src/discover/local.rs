@@ -38,7 +38,7 @@ use crate::{
             bucket_service_server::BucketServiceServer as NodeBucketServiceServer,
             node_cache_manage_service_server::NodeCacheManageServiceServer,
         },
-        CacheReader, MemCacheStore, NodeBucketService, NodeCacheManager, Uploader,
+        CacheReader, CacheReplica, MemCacheStore, NodeBucketService, NodeCacheManager, Uploader,
     },
     client::apipb::{
         blob_upload_control_server::BlobUploadControlServer,
@@ -70,7 +70,7 @@ struct Inner {
     )>,
     node_upload_svc: Vec<(
         u32,
-        BlobUploaderServer<Uploader<MemCacheStore, MemBlobStore, MemCacheStore>>,
+        BlobUploaderServer<Uploader<MemCacheStore, MemBlobStore, CacheReplica<LocalSvcDiscover>>>,
     )>,
     node_read_svc: Vec<(u32, ReaderServer<CacheReader>)>,
 
@@ -96,7 +96,9 @@ impl LocalSvcDiscover {
         srv_id: u32,
         cache_mng: NodeCacheManageServiceServer<NodeCacheManager<MemCacheStore>>,
         node_bucket: NodeBucketServiceServer<NodeBucketService<MemCacheStore>>,
-        node_upload: BlobUploaderServer<Uploader<MemCacheStore, MemBlobStore, MemCacheStore>>,
+        node_upload: BlobUploaderServer<
+            Uploader<MemCacheStore, MemBlobStore, CacheReplica<LocalSvcDiscover>>,
+        >,
         node_read: ReaderServer<CacheReader>,
     ) {
         let mut inner = self.inner.lock().await;
@@ -138,9 +140,20 @@ impl Discover for LocalSvcDiscover {
             ServiceType::ManifestLocatorSvc => local_svc(&inner.manifest_locator).await,
         }
     }
+
+    async fn find(&self, svc_type: ServiceType, srv_ids: Vec<u32>) -> Result<Vec<Svc>> {
+        self.list(svc_type).await.map(|svc_in_type| {
+            svc_in_type
+                .iter()
+                .cloned()
+                .filter(|s| srv_ids.contains(&s.server_id))
+                .take(srv_ids.len())
+                .collect::<Vec<Svc>>()
+        })
+    }
 }
 
-async fn local_svc<S>(ss: &Vec<(u32, S)>) -> Result<Vec<Svc>>
+async fn local_svc<S>(ss: &[(u32, S)]) -> Result<Vec<Svc>>
 where
     S: Service<Request<Body>, Response = Response<BoxBody>> + NamedService + Clone + Send + 'static,
     S::Future: Send + 'static,

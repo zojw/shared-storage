@@ -80,8 +80,8 @@ impl Version {
                             start: ran.start.to_owned(),
                             end: ran.end.to_owned(),
                         }),
-                        stores: vec![1], // TODO: collect store info by hearbeat.
                         level: blob.level,
+                        stores: vec![], // should be filled in locator.rs
                     });
                     if *level != 0 && ran.end <= blob.largest {
                         break;

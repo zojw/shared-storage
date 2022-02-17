@@ -61,7 +61,7 @@ where
             .collect();
 
         // TODO: real world usage should handle "split by range boundary" logic here?
-        let stores = vec![1];
+        let stores = vec![1, 2];
         let locs: Vec<Location> = request
             .get_ref()
             .blobs

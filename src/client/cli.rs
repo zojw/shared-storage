@@ -19,7 +19,7 @@ use tonic::{transport::Channel, Request};
 use super::apipb::{
     self, blob_upload_control_client::BlobUploadControlClient,
     blob_uploader_client::BlobUploaderClient, locator_client::LocatorClient,
-    reader_client::ReaderClient, KeyRange, Location, PrepareUploadResponse,
+    reader_client::ReaderClient, KeyRange, PrepareUploadResponse,
 };
 use crate::{
     discover::{Discover, ServiceType},
@@ -74,14 +74,18 @@ where
         } = resp.get_ref().to_owned();
 
         // upload blob data.
+        let object_loc = &locations[0];
         let up = Request::new(apipb::BlobRequest {
             bucket: bucket.to_owned(),
             blob: blob.to_owned(),
             content, // TODO: split content if it over boundary?
-            request_server_id: locations[0].stores[0],
-            replica_servers: locations[0].stores.to_owned(),
+            request_server_id: object_loc.stores[0],
+            replica_servers: object_loc.stores.to_owned(),
         });
-        self.get_uploader(&locations[0]).await?.upload(up).await?;
+        self.get_uploader(up.get_ref().request_server_id)
+            .await?
+            .upload(up)
+            .await?;
 
         // commit blob data.
         let fin = Request::new(apipb::FinishUploadRequest { upload_token });
@@ -117,18 +121,28 @@ where
         Ok(result)
     }
 
-    async fn get_uploader(&self, _loc: &Location) -> Result<BlobUploaderClient<Channel>> {
-        // TODO: it should be factorization and route right uploader by _loc
-        let upload_svc = self.discover.list(ServiceType::NodeUploadSvc).await?;
+    async fn get_uploader(&self, server_id: u32) -> Result<BlobUploaderClient<Channel>> {
+        let upload_svc = self
+            .discover
+            .find(ServiceType::NodeUploadSvc, vec![server_id])
+            .await?;
+        if upload_svc.is_empty() {
+            todo!("handle server id not found")
+        }
         let blob_uploader = crate::client::apipb::blob_uploader_client::BlobUploaderClient::new(
             upload_svc[0].channel.clone(),
         );
         Ok(blob_uploader)
     }
 
-    async fn get_reader(&self, _store: u32) -> Result<ReaderClient<Channel>> {
-        // TODO: establish & cache reader for store_id.
-        let read_svc = self.discover.list(ServiceType::NodeReadSvc).await?;
+    async fn get_reader(&self, srv_id: u32) -> Result<ReaderClient<Channel>> {
+        let read_svc = self
+            .discover
+            .find(ServiceType::NodeReadSvc, vec![srv_id])
+            .await?;
+        if read_svc.is_empty() {
+            todo!("handle server id not found")
+        }
         let reader = ReaderClient::new(read_svc[0].channel.clone());
         Ok(reader)
     }

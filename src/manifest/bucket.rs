@@ -61,7 +61,7 @@ where
         }
     }
 
-    async fn get_node_bucket_svc(&self) -> crate::error::Result<Vec<Svc>> {
+    async fn get_bucket_mng_for_all_cache_node(&self) -> crate::error::Result<Vec<Svc>> {
         self.discover
             .list(crate::discover::ServiceType::NodeBucketSvc)
             .await
@@ -107,7 +107,7 @@ where
         self.blob_store.create_bucket(&bucket_name).await?;
 
         // create bucket in each cache nodes.
-        for svc in &self.get_node_bucket_svc().await? {
+        for svc in &self.get_bucket_mng_for_all_cache_node().await? {
             let mut client = BucketServiceClient::new(svc.channel.clone());
             let req = Request::new(crate::cache::cachepb::CreateBucketRequest {
                 bucket: bucket_name.to_owned(),
@@ -152,7 +152,7 @@ where
         let _ = {
             self.blob_store.delete_bucket(&bucket_name).await?;
 
-            for svc in self.get_node_bucket_svc().await? {
+            for svc in self.get_bucket_mng_for_all_cache_node().await? {
                 let mut client = BucketServiceClient::new(svc.channel.clone());
                 let req = Request::new(crate::cache::cachepb::DeleteBucketRequest {
                     bucket: bucket_name.to_owned(),
@@ -213,7 +213,7 @@ where
             let _ = {
                 self.blob_store.delete_object(bucket, blob).await?;
 
-                for svc in self.get_node_bucket_svc().await? {
+                for svc in self.get_bucket_mng_for_all_cache_node().await? {
                     let mut client = BucketServiceClient::new(svc.channel.clone());
                     let req = Request::new(crate::cache::cachepb::DeleteBlobRequest {
                         bucket: bucket.to_owned(),

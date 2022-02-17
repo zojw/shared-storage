@@ -12,32 +12,76 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
+use tonic::Request;
 
-use crate::{cache::storage::PutOptions, error::Result};
+use crate::{
+    cache::storage::PutOptions,
+    client::apipb::{blob_uploader_client::BlobUploaderClient, BlobRequest},
+    discover::{Discover, ServiceType},
+    error::Result,
+};
 
-struct CacheReplica {
-    current_srv: u32,
+pub struct CacheReplica<D>
+where
+    D: Discover,
+{
+    current_srv_id: u32,
+    discover: Arc<D>,
 }
 
 #[allow(dead_code)]
-impl CacheReplica {
-    pub fn new(current_srv: u32) -> Self {
-        Self { current_srv }
+impl<D> CacheReplica<D>
+where
+    D: Discover,
+{
+    pub fn new(current_srv_id: u32, discover: Arc<D>) -> Self {
+        Self {
+            current_srv_id,
+            discover,
+        }
     }
 }
 
 #[async_trait]
-impl super::ObjectPutter for CacheReplica {
+impl<D> super::ObjectPutter for CacheReplica<D>
+where
+    D: Discover + Send + Sync + 'static,
+{
     async fn put_object(
         &self,
-        _bucket: &str,
-        _object: &str,
-        _content: Vec<u8>,
+        bucket: &str,
+        object: &str,
+        content: Vec<u8>,
         opt: Option<PutOptions>,
     ) -> Result<()> {
         let mut replica = opt.unwrap().replica_srv;
-        replica.retain(|e| *e != self.current_srv);
+        replica.retain(|e| *e != self.current_srv_id);
+
+        if replica.is_empty() {
+            return Ok(());
+        }
+
+        let req_svc = self
+            .discover
+            .find(ServiceType::NodeUploadSvc, vec![replica[0]])
+            .await?;
+
+        if req_svc.is_empty() {
+            todo!("retry route?")
+        }
+
+        let mut replica_uploader = BlobUploaderClient::new(req_svc[0].channel.clone());
+        let req = Request::new(BlobRequest {
+            bucket: bucket.to_owned(),
+            blob: object.to_owned(),
+            content: content.to_owned(),
+            request_server_id: req_svc[0].server_id,
+            replica_servers: replica,
+        });
+        replica_uploader.upload(req).await?;
 
         Ok(())
     }

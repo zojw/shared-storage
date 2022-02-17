@@ -49,12 +49,6 @@ where
     stop: AtomicBool,
 }
 
-#[derive(Clone)]
-pub struct HeartbeatTarget {
-    pub server_id: u32,
-    pub invoker: NodeCacheManageServiceClient<Channel>,
-}
-
 #[derive(Hash, PartialEq, Eq, Clone)]
 struct BucketBlob {
     bucket: String,
@@ -68,8 +62,10 @@ struct Inner {
     srv_bucket: HashMap<u32, HashSet<String>>,                // {server-id} -> [server-id, ...]
 }
 
-struct HeartbeatTask {
-    target: HeartbeatTarget,
+#[derive(Clone)]
+pub struct HeartbeatTask {
+    pub server_id: u32,
+    pub invoker: NodeCacheManageServiceClient<Channel>,
 }
 
 impl<D> ManifestStatus<D>
@@ -94,15 +90,15 @@ where
     }
 
     async fn init(&mut self, interval: Duration) -> Result<()> {
+        // heartbeat all cache node servers.
+        // FIXKME: should handle add or remove node event from discover.
         let svc = self.discover.list(NodeCacheManageSvc).await?;
         for s in svc {
             let n = NodeCacheManageServiceClient::new(s.channel.clone());
             self.delay_tasks.lock().await.insert(
                 HeartbeatTask {
-                    target: HeartbeatTarget {
-                        server_id: s.server_id,
-                        invoker: n,
-                    },
+                    server_id: s.server_id,
+                    invoker: n,
                 },
                 interval,
             );
@@ -147,12 +143,10 @@ where
                         _ => unreachable!("unreachabler"),
                     }
 
-                    self.delay_tasks.lock().await.insert(
-                        HeartbeatTask {
-                            target: heartbeat.target.to_owned(),
-                        },
-                        self.heartbeat_interval,
-                    );
+                    self.delay_tasks
+                        .lock()
+                        .await
+                        .insert(heartbeat.clone(), self.heartbeat_interval);
                 }
             }
         }
@@ -289,11 +283,11 @@ where
         last_seq: u64,
     ) -> Result<HeartbeatResponse> {
         let hb_req = Request::new(HeartbeatRequest {
-            server_id: heartbeat.target.server_id,
+            server_id: heartbeat.server_id,
             current_seq,
             last_seq,
         });
-        let res = heartbeat.target.invoker.heartbeat(hb_req).await?;
+        let res = heartbeat.invoker.heartbeat(hb_req).await?;
         Ok(res.get_ref().to_owned())
     }
 }

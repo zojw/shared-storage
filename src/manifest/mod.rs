@@ -26,5 +26,5 @@ pub mod manifestpb {
 pub use blobctrl::BlobControl;
 pub use bucket::BucketService;
 pub use locator::CacheServerLocator;
-pub use status::{HeartbeatTarget, ManifestStatus};
+pub use status::{HeartbeatTask, ManifestStatus};
 pub use versions::VersionSet;

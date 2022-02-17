@@ -77,7 +77,6 @@ where
             )
             .await?;
         if let Some(replica) = &self.replica_cache {
-            // TODO: impl replica chain between cache nodes info that indicated by request.
             let curr_srv = request.request_server_id;
             let mut replica_srv = request.replica_servers.to_owned();
             replica_srv.retain(|e| *e != curr_srv);

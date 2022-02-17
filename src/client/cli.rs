@@ -45,7 +45,13 @@ where
         Self { discover }
     }
 
-    pub async fn flush(&mut self, bucket: &str, blob: &str, content: Vec<u8>) -> Result<()> {
+    pub async fn flush(
+        &mut self,
+        bucket: &str,
+        blob: &str,
+        content: Vec<u8>,
+        replica_count: u32,
+    ) -> Result<()> {
         let blob_ctrl_svc = self.discover.list(ServiceType::ManifestBlobCtrl).await?;
         let blob_controller = BlobUploadControlClient::new(blob_ctrl_svc[0].channel.clone());
 
@@ -63,6 +69,7 @@ where
                 object_num: 1,
                 deletion_num: 0,
             }),
+            replica_count,
         };
         let prep = Request::new(apipb::PrepareUploadRequest {
             blobs: vec![new_blob],

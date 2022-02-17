@@ -49,6 +49,7 @@ message NewBlob {
 	string blob = 2;
 	uint32 level = 3;
 	BlobStats stats = 4;
+	uint32 replica_count = 5;
 }
 
 message BlobStats {

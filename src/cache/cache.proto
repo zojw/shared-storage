@@ -30,6 +30,10 @@ service BucketService {
 
 service NodeCacheManageService {
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+
+  rpc RefillCache(RefillCacheRequest) returns (RefillCacheResponse);
+
+  rpc RemoveCache(RemoveCacheRequest) returns (RemoveCacheResponse);
 }
 
 message CreateBucketRequest { string bucket = 1; }
@@ -88,3 +92,11 @@ message CacheEvent {
   string bucket = 5;
   string blob = 6;
 }
+
+message RefillCacheRequest { string bucket = 1; string blob = 2; }
+
+message RefillCacheResponse {}
+
+message RemoveCacheRequest { string bucket = 1; string blob = 2; }
+
+message RemoveCacheResponse {}

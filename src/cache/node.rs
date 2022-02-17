@@ -18,30 +18,44 @@ use async_trait::async_trait;
 use tonic::{Response, Status};
 
 use super::{
-    cachepb::{self, HeartbeatRequest, HeartbeatResponse},
+    cachepb::{
+        self, HeartbeatRequest, HeartbeatResponse, RefillCacheRequest, RefillCacheResponse,
+        RemoveCacheRequest, RemoveCacheResponse,
+    },
     CacheStatus, CacheStorage,
 };
+use crate::blobstore::BlobStore;
 
-pub struct NodeCacheManager<S>
+pub struct NodeCacheManager<S, B>
 where
     S: CacheStorage,
+    B: BlobStore,
 {
     status: Arc<CacheStatus<S>>,
+    blob_store: Arc<B>,
+    local_store: Arc<S>,
 }
 
-impl<S> NodeCacheManager<S>
+impl<S, B> NodeCacheManager<S, B>
 where
     S: CacheStorage,
+    B: BlobStore,
 {
-    pub fn new(status: Arc<CacheStatus<S>>) -> Self {
-        Self { status }
+    pub fn new(status: Arc<CacheStatus<S>>, blob_store: Arc<B>, local_store: Arc<S>) -> Self {
+        Self {
+            status,
+            blob_store,
+            local_store,
+        }
     }
 }
 
 #[async_trait]
-impl<S> cachepb::node_cache_manage_service_server::NodeCacheManageService for NodeCacheManager<S>
+impl<S, B> cachepb::node_cache_manage_service_server::NodeCacheManageService
+    for NodeCacheManager<S, B>
 where
     S: CacheStorage + Sync + Send + 'static,
+    B: BlobStore + Sync + Send + 'static,
 {
     async fn heartbeat(
         &self,
@@ -59,5 +73,26 @@ where
             current_seq,
             status: Some(cachepb::Status { server_id, events }),
         }))
+    }
+
+    async fn refill_cache(
+        &self,
+        request: tonic::Request<RefillCacheRequest>,
+    ) -> Result<tonic::Response<RefillCacheResponse>, tonic::Status> {
+        let RefillCacheRequest { bucket, blob } = request.get_ref();
+        let content = self.blob_store.read_object(bucket, blob).await?;
+        self.local_store
+            .put_object(bucket, blob, content, None)
+            .await?;
+        Ok(Response::new(RefillCacheResponse {}))
+    }
+
+    async fn remove_cache(
+        &self,
+        request: tonic::Request<RemoveCacheRequest>,
+    ) -> Result<tonic::Response<RemoveCacheResponse>, tonic::Status> {
+        let RemoveCacheRequest { bucket, blob } = request.get_ref();
+        self.local_store.delete_object(bucket, blob).await?;
+        Ok(Response::new(RemoveCacheResponse {}))
     }
 }

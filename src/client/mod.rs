@@ -44,7 +44,7 @@ mod tests {
         manifest::{
             manifestpb::bucket_service_server::BucketServiceServer as ManifestBucketServiceServer,
             storage::MemBlobMetaStore, BlobControl, BucketService, CacheServerLocator,
-            ManifestStatus, VersionSet,
+            ManifestStatus, Reconciler, VersionSet,
         },
     };
 
@@ -74,8 +74,11 @@ mod tests {
                 local_store.clone(),
                 cache_status.clone(),
             ));
-            let node_cache_mng_svc =
-                NodeCacheManageServiceServer::new(NodeCacheManager::new(cache_status));
+            let node_cache_mng_svc = NodeCacheManageServiceServer::new(NodeCacheManager::new(
+                cache_status,
+                blob_store.clone(),
+                local_store.clone(),
+            ));
 
             discover
                 .register_cache_node_svc(
@@ -109,8 +112,11 @@ mod tests {
                 local_store.clone(),
                 cache_status.clone(),
             ));
-            let node_cache_mng_svc =
-                NodeCacheManageServiceServer::new(NodeCacheManager::new(cache_status));
+            let node_cache_mng_svc = NodeCacheManageServiceServer::new(NodeCacheManager::new(
+                cache_status,
+                blob_store.clone(),
+                local_store.clone(),
+            ));
 
             discover
                 .register_cache_node_svc(
@@ -126,12 +132,19 @@ mod tests {
         };
 
         // 2. manifest server manage cache node and blob_store(grpc service)
-        let (_, manifest_status) = {
+        let (_, manifest_status, reconcile) = {
             let meta_store = MemBlobMetaStore::new(blob_store.clone()).await?;
             let version_set = Arc::new(VersionSet::new(meta_store).await?);
             let blob_ctrl_svc = BlobUploadControlServer::new(BlobControl::new(version_set.clone()));
 
             let manifest_status = build_and_run_manifest_status(discover.clone()).await?;
+
+            let reconcile = build_and_run_reconciler(
+                discover.clone(),
+                version_set.clone(),
+                manifest_status.clone(),
+            )
+            .await?;
 
             let locator_svc = LocatorServer::new(CacheServerLocator::new(
                 version_set.clone(),
@@ -149,7 +162,7 @@ mod tests {
                 .register_manifest_svc(srv_id, blob_ctrl_svc, cluster_bucket_svc, locator_svc)
                 .await;
 
-            (srv_id, manifest_status)
+            (srv_id, manifest_status, reconcile)
         };
 
         // 3. client use mainifest & cache node(lib).
@@ -158,7 +171,7 @@ mod tests {
 
             // 4. simple test.
             client.create_bucket("b1").await?;
-            client.flush("b1", "o2", b"abc".to_vec()).await?;
+            client.flush("b1", "o2", b"abc".to_vec(), 2).await?;
 
             // simple sleep wait manifest-cache node heartbeat before read
             // TODO: this can avoid in future.
@@ -169,6 +182,7 @@ mod tests {
         }
 
         manifest_status.clone().stop();
+        reconcile.clone().stop();
         Ok(())
     }
 
@@ -188,5 +202,23 @@ mod tests {
             });
         }
         Ok(manifest_status)
+    }
+
+    async fn build_and_run_reconciler(
+        discover: Arc<LocalSvcDiscover>,
+        version_set: Arc<VersionSet<MemBlobMetaStore<MemBlobStore>>>,
+        manifest_status: Arc<ManifestStatus<LocalSvcDiscover>>,
+    ) -> Result<Arc<Reconciler<LocalSvcDiscover, MemBlobMetaStore<MemBlobStore>>>> {
+        let reconcile = Arc::new(Reconciler::new(discover, version_set, manifest_status));
+        {
+            let r = reconcile.clone();
+            tokio::spawn(async move {
+                let result = r.run().await;
+                if result.is_err() {
+                    //
+                }
+            });
+        }
+        Ok(reconcile)
     }
 }

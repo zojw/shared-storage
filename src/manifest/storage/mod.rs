@@ -58,6 +58,7 @@ mod tests {
                     object_num: 2,
                     deletion_num: 0,
                 }),
+                replica_count: 1,
             }],
             remove_blobs: vec![DeleteBlob {
                 bucket: "b1".to_owned(),

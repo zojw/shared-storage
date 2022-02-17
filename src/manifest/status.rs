@@ -14,6 +14,7 @@
 
 use std::{
     collections::{hash_map, HashMap, HashSet},
+    hash::Hash,
     sync::{
         atomic::{AtomicBool, Ordering::Relaxed},
         Arc,
@@ -35,7 +36,6 @@ use crate::{
     discover::{Discover, ServiceType::NodeCacheManageSvc},
     error::Result,
 };
-
 pub struct ManifestStatus<D>
 where
     D: Discover,
@@ -50,9 +50,9 @@ where
 }
 
 #[derive(Hash, PartialEq, Eq, Clone)]
-struct BucketBlob {
-    bucket: String,
-    blob: String,
+pub struct BucketBlob {
+    pub bucket: String,
+    pub blob: String,
 }
 
 struct Inner {
@@ -115,6 +115,25 @@ where
         Some(Vec::from_iter(
             inner.blob_loc.get(bucket)?.get(blob)?.iter().cloned(),
         ))
+    }
+
+    pub async fn get_bucket_replca_count_view(&self) -> HashMap<BucketBlob, HashSet<u32>> {
+        let inner = self.inner.lock().await;
+        inner
+            .blob_loc
+            .iter()
+            .flat_map(|(bucket, blobs)| {
+                blobs.iter().map(|(blob, srvs)| {
+                    (
+                        BucketBlob {
+                            bucket: bucket.to_owned(),
+                            blob: blob.to_owned(),
+                        },
+                        srvs.to_owned(),
+                    )
+                })
+            })
+            .collect::<HashMap<BucketBlob, HashSet<u32>>>()
     }
 
     pub async fn run(&self) -> Result<()> {

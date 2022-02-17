@@ -33,6 +33,7 @@ pub struct BlobDesc {
     pub level: u32,
     pub smallest: Vec<u8>,
     pub largest: Vec<u8>,
+    pub replica_count: u32,
 }
 
 #[derive(Clone, Default)]
@@ -101,6 +102,13 @@ impl Version {
         None
     }
 
+    pub fn list_all_blobs(&self) -> Vec<BlobDesc> {
+        self.buckets
+            .iter()
+            .flat_map(|(_, blobs)| blobs.iter().map(|(_, blob)| blob.to_owned()))
+            .collect::<Vec<_>>()
+    }
+
     pub fn get_stage(&self, token: &str) -> Option<StagingOperation> {
         self.staging_op.get(token).map(|t| t.to_owned())
     }
@@ -143,6 +151,7 @@ impl Version {
                         level: new_blob.level,
                         smallest,
                         largest,
+                        replica_count: new_blob.replica_count.to_owned(),
                     },
                 );
             }
@@ -163,6 +172,7 @@ impl Version {
                             level: new_blob.level,
                             smallest: stats.smallest,
                             largest: stats.largest,
+                            replica_count: new_blob.replica_count.to_owned(),
                         },
                     );
                 }

@@ -15,6 +15,7 @@
 mod blobctrl;
 mod bucket;
 mod locator;
+mod reconcile;
 mod status;
 pub mod storage;
 mod versions;
@@ -26,5 +27,6 @@ pub mod manifestpb {
 pub use blobctrl::BlobControl;
 pub use bucket::BucketService;
 pub use locator::CacheServerLocator;
+pub use reconcile::Reconciler;
 pub use status::{HeartbeatTask, ManifestStatus};
 pub use versions::VersionSet;

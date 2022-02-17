@@ -62,7 +62,7 @@ pub struct LocalSvcDiscover {
 struct Inner {
     node_cache_mng_svc: Vec<(
         u32,
-        NodeCacheManageServiceServer<NodeCacheManager<MemCacheStore>>,
+        NodeCacheManageServiceServer<NodeCacheManager<MemCacheStore, MemBlobStore>>,
     )>,
     node_bucket_svc: Vec<(
         u32,
@@ -94,7 +94,7 @@ impl LocalSvcDiscover {
     pub async fn register_cache_node_svc(
         &self,
         srv_id: u32,
-        cache_mng: NodeCacheManageServiceServer<NodeCacheManager<MemCacheStore>>,
+        cache_mng: NodeCacheManageServiceServer<NodeCacheManager<MemCacheStore, MemBlobStore>>,
         node_bucket: NodeBucketServiceServer<NodeBucketService<MemCacheStore>>,
         node_upload: BlobUploaderServer<
             Uploader<MemCacheStore, MemBlobStore, CacheReplica<LocalSvcDiscover>>,

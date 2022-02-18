@@ -15,6 +15,7 @@
 mod blobctrl;
 mod bucket;
 mod locator;
+mod placement;
 mod reconcile;
 mod status;
 pub mod storage;

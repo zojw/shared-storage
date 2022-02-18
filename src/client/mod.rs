@@ -61,11 +61,12 @@ mod tests {
 
             let local_store = Arc::new(MemCacheStore::default());
             let cache_status = Arc::new(CacheStatus::new(local_store.clone()).await?);
-            let cache_replica = Arc::new(CacheReplica::new(srv_id, discover.clone()));
+            // let cache_replica = Arc::new(CacheReplica::new(srv_id, discover.clone()));
             let uploader = Uploader::new(
                 local_store.clone(),
                 blob_store.clone(),
-                Some(cache_replica),
+                // Some(cache_replica),
+                None,
                 cache_status.clone(),
             );
             let upload_svc = BlobUploaderServer::new(uploader);
@@ -99,11 +100,12 @@ mod tests {
 
             let local_store = Arc::new(MemCacheStore::default());
             let cache_status = Arc::new(CacheStatus::new(local_store.clone()).await?);
-            let cache_replica = Arc::new(CacheReplica::new(srv_id, discover.clone()));
+            // let cache_replica = Arc::new(CacheReplica::new(srv_id, discover.clone()));
             let uploader = Uploader::new(
                 local_store.clone(),
                 blob_store.clone(),
-                Some(cache_replica),
+                // Some(cache_replica),
+                None,
                 cache_status.clone(),
             );
             let upload_svc = BlobUploaderServer::new(uploader);

@@ -50,6 +50,9 @@ message NewBlob {
 	uint32 level = 3;
 	BlobStats stats = 4;
 	uint32 replica_count = 5;
+	uint64 size = 6;
+	uint64 objects = 7;
+	uint64 span_id = 8;
 }
 
 message BlobStats {

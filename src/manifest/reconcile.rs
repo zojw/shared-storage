@@ -158,7 +158,7 @@ where
         Ok(())
     }
 
-    async fn refill_cache_on_srvs(&self, bucket: &str, blob: &str, srvs: &[u32]) -> Result<()> {
+    pub async fn refill_cache_on_srvs(&self, bucket: &str, blob: &str, srvs: &[u32]) -> Result<()> {
         let ss = self
             .discover
             .find(ServiceType::NodeCacheManageSvc, srvs.to_owned())

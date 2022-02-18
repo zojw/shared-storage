@@ -70,6 +70,9 @@ where
                 deletion_num: 0,
             }),
             replica_count,
+            size: 1,
+            objects: 1,
+            span_id: 0,
         };
         let prep = Request::new(apipb::PrepareUploadRequest {
             blobs: vec![new_blob],

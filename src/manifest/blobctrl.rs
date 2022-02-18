@@ -118,6 +118,8 @@ where
             .map(|ab| ab.desc.as_ref().unwrap().to_owned())
             .collect();
 
+        // TODO: refill span-id at here.
+
         self.version_set
             .log_and_apply(vec![VersionEdit {
                 add_buckets: vec![],

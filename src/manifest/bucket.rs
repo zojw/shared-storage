@@ -100,6 +100,8 @@ where
                 remove_blobs: vec![],
                 add_staging: vec![stg_op],
                 remove_staging: vec![],
+                add_spans: vec![],
+                remove_spans: vec![],
             }])
             .await?;
 
@@ -124,6 +126,8 @@ where
                 remove_blobs: vec![],
                 add_staging: vec![],
                 remove_staging: vec![token],
+                add_spans: vec![],
+                remove_spans: vec![],
             }])
             .await?;
 
@@ -145,6 +149,8 @@ where
                 remove_blobs: vec![],
                 add_staging: vec![],
                 remove_staging: vec![],
+                add_spans: vec![],
+                remove_spans: vec![],
             }])
             .await?;
         // TODO: maybe need mantain "ZombieBucket" info to cleanup.
@@ -206,6 +212,8 @@ where
                     }],
                     add_staging: vec![],
                     remove_staging: vec![],
+                    add_spans: vec![],
+                    remove_spans: vec![],
                 }])
                 .await?;
             // TODO: maybe need mantain "ZombieBlob" info to cleanup.

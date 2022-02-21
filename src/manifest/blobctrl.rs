@@ -17,10 +17,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tonic::{Request, Response, Status};
 
-use super::{
-    placement, storage,
-    versions::{BlobDesc, VersionSet},
-};
+use super::{placement, storage, versions::VersionSet};
 use crate::{
     client::apipb::{self, FinishUploadResponse, KeyRange, Location, PrepareUploadResponse},
     manifest::storage::{NewBlob, StagingBlob, StagingOperation, VersionEdit},
@@ -106,6 +103,8 @@ where
                 remove_blobs: vec![],
                 add_staging: vec![stg],
                 remove_staging: vec![],
+                add_spans: vec![],
+                remove_spans: vec![],
             }])
             .await?;
 
@@ -130,7 +129,7 @@ where
 
         for b in add_blobs.iter_mut() {
             let new_blob = self.placement.add_new_blob(b.to_owned()).await?;
-            b.span_id = new_blob.span_id;
+            b.span_ids = new_blob.span_ids;
         }
 
         self.version_set
@@ -141,6 +140,8 @@ where
                 remove_blobs: vec![],
                 add_staging: vec![],
                 remove_staging: vec![token.to_owned()],
+                add_spans: vec![],
+                remove_spans: vec![],
             }])
             .await?;
 

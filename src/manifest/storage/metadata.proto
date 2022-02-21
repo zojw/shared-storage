@@ -24,6 +24,15 @@ message VersionEdit {
 
 	repeated StagingOperation add_staging = 5;
 	repeated string remove_staging = 6;
+
+	repeated NewSpan add_spans = 7;
+	repeated uint64 remove_spans = 8;
+}
+
+message NewSpan {
+	uint64 span_id = 1;
+	bytes smallest = 2;
+	bytes largest = 3;
 }
 
 message StagingBucket {
@@ -52,7 +61,7 @@ message NewBlob {
 	uint32 replica_count = 5;
 	uint64 size = 6;
 	uint64 objects = 7;
-	uint64 span_id = 8;
+	repeated uint64 span_ids = 8;
 }
 
 message BlobStats {

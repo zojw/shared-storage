@@ -187,7 +187,7 @@ mod tests {
 
             // simple sleep wait manifest-cache node heartbeat before read
             // TODO: this can avoid in future.
-            sleep(Duration::from_millis(1000)).await;
+            sleep(Duration::from_millis(2000)).await;
 
             let res = client.query(apipb::QueryExp {}).await?;
             assert_eq!(res.len(), 1);

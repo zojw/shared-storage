@@ -61,7 +61,7 @@ mod tests {
                 replica_count: 1,
                 size: 1,
                 objects: 1,
-                span_id: 1,
+                span_ids: vec![1],
             }],
             remove_blobs: vec![DeleteBlob {
                 bucket: "b1".to_owned(),
@@ -71,6 +71,8 @@ mod tests {
             }],
             add_staging: vec![],
             remove_staging: vec![],
+            add_spans: vec![],
+            remove_spans: vec![],
         })
         .await?;
 

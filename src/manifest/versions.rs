@@ -36,7 +36,7 @@ pub struct BlobDesc {
     pub replica_count: u32,
     pub size: u64,
     pub objects: u64,
-    pub span_id: u64,
+    pub span_ids: Vec<u64>,
 }
 
 #[derive(Clone, Default)]
@@ -157,7 +157,7 @@ impl Version {
                         replica_count: new_blob.replica_count.to_owned(),
                         size: new_blob.size.to_owned(),
                         objects: new_blob.objects.to_owned(),
-                        span_id: new_blob.span_id.to_owned(),
+                        span_ids: new_blob.span_ids.to_owned(),
                     },
                 );
             }
@@ -181,7 +181,7 @@ impl Version {
                             replica_count: new_blob.replica_count.to_owned(),
                             size: new_blob.size.to_owned(),
                             objects: new_blob.objects.to_owned(),
-                            span_id: new_blob.span_id.to_owned(),
+                            span_ids: new_blob.span_ids.to_owned(),
                         },
                     );
                 }

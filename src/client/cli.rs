@@ -72,7 +72,7 @@ where
             replica_count,
             size: 1,
             objects: 1,
-            span_id: 0,
+            span_ids: vec![],
         };
         let prep = Request::new(apipb::PrepareUploadRequest {
             blobs: vec![new_blob],

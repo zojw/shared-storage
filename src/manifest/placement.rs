@@ -21,11 +21,7 @@ use std::{
 use async_trait::async_trait;
 use tokio::sync::{Mutex, MutexGuard};
 
-use super::{
-    storage::MetaStorage,
-    versions::{BlobDesc, Version},
-    Reconciler, VersionSet,
-};
+use super::{storage::MetaStorage, versions::Version, Reconciler, VersionSet};
 use crate::{discover::Discover, error::Result, manifest::storage};
 
 // TODO: it's fake value
@@ -113,12 +109,14 @@ where
         }
 
         // add to first suitable span in current span.
-        let added_span = Self::add_blob_to_span(&mut inner, &blob).await?;
+        let mut added_spans = Self::add_blob_to_span(&mut inner, &blob).await?;
 
         // check split and split.
-        let split_at = Self::split_if_need(&mut inner, &added_span).await?;
-        if let Some(split_key) = split_at {
-            Self::do_split(&mut inner, split_key, &added_span).await?;
+        for added_span in added_spans.iter_mut() {
+            let split_at = Self::split_if_need(&mut inner, &added_span).await?;
+            if let Some(split_key) = split_at {
+                Self::do_split(&mut inner, split_key, &added_span).await?;
+            }
         }
 
         // reconcile after this change.
@@ -127,7 +125,7 @@ where
             .await?;
 
         let mut blob = blob.clone();
-        blob.span_id = added_span;
+        blob.span_ids = added_spans;
         Ok(blob)
     }
 }
@@ -172,33 +170,54 @@ where
     async fn add_blob_to_span(
         inner: &mut MutexGuard<'_, Inner<S>>,
         desc: &storage::NewBlob,
-    ) -> Result<u64> {
+    ) -> Result<Vec<u64>> {
         let stats = desc.stats.as_ref().unwrap().to_owned();
-        let mut rs = inner.key_spans.range(..stats.smallest.to_owned());
-        let span_id = loop {
-            let (_, r) = rs.next_back().unwrap();
-            let r = r.lock().await;
-            if r.end.to_owned() > stats.smallest.to_owned() {
-                break r.id.to_owned();
+
+        // find start span
+        let mut span_before_sst = inner.key_spans.range(..=stats.smallest.to_owned());
+        let left_span = loop {
+            let (_, span) = span_before_sst.next_back().unwrap();
+            let span = span.lock().await;
+            if span.end.to_owned() > stats.smallest.to_owned() {
+                break span.start.to_owned();
             }
         };
-        let span = inner.id_spans.get_mut(&span_id).unwrap();
-        let mut span = span.lock().await;
-        span.blobs.insert(
-            stats.smallest.to_owned(),
-            SpanBlob {
-                bucket: desc.bucket.to_owned(),
-                blob: desc.blob.to_owned(),
-                span_id: span_id.to_owned(),
-                start: stats.smallest.to_owned(),
-                end: stats.largest.to_owned(),
-                size: desc.size.to_owned(),
-                object: desc.objects.to_owned(),
-            },
-        );
-        span.size += desc.size;
-        span.objects += desc.objects;
-        Ok(span_id)
+
+        // continue to find crossed spans
+        let mut span_ids = Vec::new();
+        let mut span_finder = inner.key_spans.range(left_span..);
+        loop {
+            if let Some((_, span)) = span_finder.next() {
+                let span = span.lock().await;
+                if span.end.to_owned() <= stats.largest.to_owned() {
+                    span_ids.push(span.id.to_owned())
+                }
+            } else {
+                break;
+            }
+        }
+
+        // add blob to each spans.
+        for span_id in span_ids.to_owned() {
+            let span = inner.id_spans.get_mut(&span_id).unwrap();
+            let mut span = span.lock().await;
+            span.blobs.insert(
+                stats.smallest.to_owned(),
+                SpanBlob {
+                    bucket: desc.bucket.to_owned(),
+                    blob: desc.blob.to_owned(),
+                    span_id: span_id.to_owned(),
+                    start: stats.smallest.to_owned(),
+                    end: stats.largest.to_owned(),
+                    size: desc.size.to_owned(),
+                    object: desc.objects.to_owned(),
+                },
+            );
+            span.size += desc.size;
+            span.objects += desc.objects;
+        }
+
+        Ok(span_ids)
     }
 
     async fn split_if_need(

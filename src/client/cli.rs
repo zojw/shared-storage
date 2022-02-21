@@ -87,10 +87,11 @@ where
         let object_loc = &locations[0];
         let up = Request::new(apipb::BlobRequest {
             bucket: bucket.to_owned(),
+            span: object_loc.spans[0].span_id,
             blob: blob.to_owned(),
             content, // TODO: split content if it over boundary?
-            request_server_id: object_loc.stores[0],
-            replica_servers: object_loc.stores.to_owned(),
+            request_server_id: object_loc.spans[0].server_id,
+            replica_servers: vec![],
         });
         self.get_uploader(up.get_ref().request_server_id)
             .await?
@@ -120,7 +121,7 @@ where
         let locations = loc_resp.get_ref().locations.to_owned();
 
         for loc in locations {
-            let mut reader = self.get_reader(loc.stores[0]).await?;
+            let mut reader = self.get_reader(loc.spans[0].server_id).await?;
             let condition = Some(apipb::QueryExp {}); // TODO: detach exp to store request.
             let query_req = Request::new(apipb::QueryRequest { condition });
             let query_resp = reader.query(query_req).await?;

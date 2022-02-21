@@ -25,9 +25,9 @@ pub trait CacheStorage: ObjectPutter {
     async fn delete_bucket(&self, bucket: &str) -> Result<()>;
     async fn list_buckets(&self) -> Result<Vec<String>>;
     async fn list_objects(&self, bucket: &str) -> Result<Vec<String>>;
-    async fn delete_object(&self, bucket_name: &str, object_name: &str) -> Result<()>;
+    async fn delete_object(&self, bucket_name: &str, object_name: &str, span: u64) -> Result<()>;
 
-    async fn read_object(&self, bucket: &str, object: &str) -> Result<Vec<u8>>;
+    async fn read_object(&self, bucket: &str, object: &str, span: u64) -> Result<Vec<u8>>;
 }
 
 pub struct PutOptions {
@@ -40,6 +40,7 @@ pub trait ObjectPutter {
         &self,
         bucket: &str,
         object: &str,
+        span: u64,
         content: Vec<u8>,
         opt: Option<PutOptions>,
     ) -> Result<()>;

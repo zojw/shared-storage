@@ -19,7 +19,9 @@ use tonic::{Request, Response, Status};
 
 use super::{placement, storage, versions::VersionSet};
 use crate::{
-    client::apipb::{self, FinishUploadResponse, KeyRange, Location, PrepareUploadResponse},
+    client::apipb::{
+        self, FinishUploadResponse, KeyRange, Location, PrepareUploadResponse, SpanLoc,
+    },
     manifest::storage::{NewBlob, StagingBlob, StagingOperation, VersionEdit},
 };
 
@@ -67,7 +69,7 @@ where
             })
             .collect();
 
-        // TODO: real world usage should handle "split by range boundary" logic here?
+        // FIXME!!!!: split range by span bondary provider by locator
         let stores = vec![1, 2];
         let locs: Vec<Location> = request
             .get_ref()
@@ -81,7 +83,11 @@ where
                 }),
                 bucket: b.bucket.to_owned(),
                 blob: b.blob.to_owned(),
-                stores: stores.to_owned(),
+                spans: vec![SpanLoc {
+                    // FIXME: fix mock data!!!
+                    span_id: 1,
+                    server_id: 1,
+                }],
                 level: b.level.to_owned(),
             })
             .collect();

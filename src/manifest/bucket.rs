@@ -223,11 +223,14 @@ where
 
                 for svc in self.get_bucket_mng_for_all_cache_node().await? {
                     let mut client = BucketServiceClient::new(svc.channel.clone());
-                    let req = Request::new(crate::cache::cachepb::DeleteBlobRequest {
-                        bucket: bucket.to_owned(),
-                        blob: blob.to_owned(),
-                    });
-                    client.delete_blob(req).await?;
+                    for span in &blob_desc.span_ids {
+                        let req = Request::new(crate::cache::cachepb::DeleteBlobRequest {
+                            bucket: bucket.to_owned(),
+                            blob: blob.to_owned(),
+                            span: span.to_owned(),
+                        });
+                        client.delete_blob(req).await?;
+                    }
                 }
             };
         }

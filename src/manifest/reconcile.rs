@@ -55,42 +55,49 @@ where
     pub async fn reconcile_blob(&self, bucket: &str, blob: &str) -> Result<()> {
         let ver = self.version_set.current_version().await;
 
-        let desired_replica_count = ver.get_blob(bucket, blob).unwrap_or_default().replica_count;
-        let current_replicas = self
-            .status
-            .get_bucket_replica(bucket, blob)
-            .await
-            .unwrap_or_default();
+        let blob_desc = ver.get_blob(bucket, blob).unwrap_or_default();
+        let desired_replica_count = blob_desc.replica_count;
+        let spans = blob_desc.span_ids;
 
-        if desired_replica_count == current_replicas.len() as u32 {
-            return Ok(());
-        }
+        for span in spans {
+            let current_replicas = self
+                .status
+                .get_bucket_replica(bucket, blob, &span)
+                .await
+                .unwrap_or_default();
 
-        let all_cache_srvs = self
-            .discover
-            .list(ServiceType::NodeCacheManageSvc)
-            .await?
-            .iter()
-            .map(|s| s.server_id)
-            .collect::<Vec<u32>>();
-        let mut other_srvs = all_cache_srvs.clone();
-        other_srvs.retain(|s| !current_replicas.contains(s));
+            if desired_replica_count == current_replicas.len() as u32 {
+                return Ok(());
+            }
 
-        if desired_replica_count > current_replicas.len() as u32 {
-            let add_srvs = Self::sort_server_by_add_score(other_srvs);
-            let add_srvs = (&add_srvs
-                [..(desired_replica_count as usize - current_replicas.len() as usize)])
+            let all_cache_srvs = self
+                .discover
+                .list(ServiceType::NodeCacheManageSvc)
+                .await?
+                .iter()
+                .map(|s| s.server_id)
+                .collect::<Vec<u32>>();
+            let mut other_srvs = all_cache_srvs.clone();
+            other_srvs.retain(|s| !current_replicas.contains(s));
+
+            if desired_replica_count > current_replicas.len() as u32 {
+                let add_srvs = Self::sort_server_by_add_score(other_srvs);
+                let add_srvs = (&add_srvs
+                    [..(desired_replica_count as usize - current_replicas.len() as usize)])
+                    .to_owned();
+                self.refill_cache_on_srvs(bucket, blob, span, &add_srvs)
+                    .await?;
+                return Ok(());
+            }
+
+            let remove_srvs = Self::sort_server_by_remove_score(other_srvs);
+            let remove_srvs = (&remove_srvs
+                [..(current_replicas.len() as usize - desired_replica_count as usize)])
                 .to_owned();
-            self.refill_cache_on_srvs(bucket, blob, &add_srvs).await?;
-            return Ok(());
+            self.remove_cache_on_srvs(bucket, blob, span, &remove_srvs)
+                .await?;
         }
 
-        let remove_srvs = Self::sort_server_by_remove_score(other_srvs);
-        let remove_srvs = (&remove_srvs
-            [..(current_replicas.len() as usize - desired_replica_count as usize)])
-            .to_owned();
-        self.remove_cache_on_srvs(bucket, blob, &remove_srvs)
-            .await?;
         Ok(())
     }
 }
@@ -130,42 +137,48 @@ where
     async fn try_reconcile(&self) -> Result<()> {
         let ver = self.version_set.current_version().await;
         let desired_blobs = ver.list_all_blobs();
-        let mut current_blobs = self.status.get_bucket_replca_view().await;
+        let mut current_blobs = self.status.get_bucket_replica_view().await;
 
         let mut ops = Vec::new();
         for desired_blob in desired_blobs {
             let desired_replica = desired_blob.replica_count;
-            let current_key = BucketBlob {
-                bucket: desired_blob.bucket.to_owned(),
-                blob: desired_blob.blob.to_owned(),
-            };
-            let empty = HashSet::new();
-            let current_replica = current_blobs.get(&current_key).unwrap_or(&empty);
-            if desired_replica == current_replica.len() as u32 {
+            for desired_span in desired_blob.span_ids {
+                let current_key = BucketBlob {
+                    bucket: desired_blob.bucket.to_owned(),
+                    blob: desired_blob.blob.to_owned(),
+                    span_id: desired_span.to_owned(),
+                };
+                let empty = HashSet::new();
+                let current_replica = current_blobs.get(&current_key).unwrap_or(&empty);
+                if desired_replica == current_replica.len() as u32 {
+                    current_blobs.remove(&current_key);
+                    continue;
+                }
+                if desired_replica > current_replica.len() as u32 {
+                    ops.push(ReconcileTask {
+                        bucket: desired_blob.bucket.to_owned(),
+                        blob: desired_blob.blob.to_owned(),
+                        span: desired_span.to_owned(),
+                        count: desired_replica as i32 - current_replica.len() as i32,
+                        srv_id: current_replica.iter().cloned().collect::<Vec<u32>>(),
+                    })
+                } else {
+                    ops.push(ReconcileTask {
+                        bucket: desired_blob.bucket.to_owned(),
+                        blob: desired_blob.blob.to_owned(),
+                        span: desired_span.to_owned(),
+                        count: current_replica.len() as i32 - desired_replica as i32,
+                        srv_id: current_replica.iter().cloned().collect::<Vec<u32>>(),
+                    })
+                }
                 current_blobs.remove(&current_key);
-                continue;
             }
-            if desired_replica > current_replica.len() as u32 {
-                ops.push(ReconcileTask {
-                    bucket: desired_blob.bucket.to_owned(),
-                    blob: desired_blob.blob.to_owned(),
-                    count: desired_replica as i32 - current_replica.len() as i32,
-                    srv_id: current_replica.iter().cloned().collect::<Vec<u32>>(),
-                })
-            } else {
-                ops.push(ReconcileTask {
-                    bucket: desired_blob.bucket.to_owned(),
-                    blob: desired_blob.blob.to_owned(),
-                    count: current_replica.len() as i32 - desired_replica as i32,
-                    srv_id: current_replica.iter().cloned().collect::<Vec<u32>>(),
-                })
-            }
-            current_blobs.remove(&current_key);
         }
         for (obsoleted, replica) in current_blobs {
             ops.push(ReconcileTask {
                 bucket: obsoleted.bucket.to_owned(),
                 blob: obsoleted.blob.to_owned(),
+                span: obsoleted.span_id.to_owned(),
                 count: -(replica.len() as i32),
                 srv_id: replica.iter().cloned().collect::<Vec<u32>>(),
             })
@@ -195,18 +208,34 @@ where
 
         for (task, change_srvs) in op_srvs {
             if task.count < 0 {
-                self.remove_cache_on_srvs(&task.bucket, &task.blob, &change_srvs)
-                    .await?;
+                self.remove_cache_on_srvs(
+                    &task.bucket,
+                    &task.blob,
+                    task.span.to_owned(),
+                    &change_srvs,
+                )
+                .await?;
             } else {
-                self.refill_cache_on_srvs(&task.bucket, &task.blob, &change_srvs)
-                    .await?;
+                self.refill_cache_on_srvs(
+                    &task.bucket,
+                    &task.blob,
+                    task.span.to_owned(),
+                    &change_srvs,
+                )
+                .await?;
             }
         }
 
         Ok(())
     }
 
-    pub async fn refill_cache_on_srvs(&self, bucket: &str, blob: &str, srvs: &[u32]) -> Result<()> {
+    pub async fn refill_cache_on_srvs(
+        &self,
+        bucket: &str,
+        blob: &str,
+        span: u64,
+        srvs: &[u32],
+    ) -> Result<()> {
         let ss = self
             .discover
             .find(ServiceType::NodeCacheManageSvc, srvs.to_owned())
@@ -216,13 +245,20 @@ where
             let req = Request::new(RefillCacheRequest {
                 bucket: bucket.to_owned(),
                 blob: blob.to_owned(),
+                span: span.to_owned(),
             });
             client.refill_cache(req).await?;
         }
         Ok(())
     }
 
-    async fn remove_cache_on_srvs(&self, bucket: &str, blob: &str, srvs: &[u32]) -> Result<()> {
+    async fn remove_cache_on_srvs(
+        &self,
+        bucket: &str,
+        blob: &str,
+        span: u64,
+        srvs: &[u32],
+    ) -> Result<()> {
         let ss = self
             .discover
             .find(ServiceType::NodeCacheManageSvc, srvs.to_owned())
@@ -232,6 +268,7 @@ where
             let req = Request::new(RemoveCacheRequest {
                 bucket: bucket.to_owned(),
                 blob: blob.to_owned(),
+                span: span.to_owned(),
             });
             client.remove_cache(req).await?;
         }
@@ -256,6 +293,7 @@ where
 struct ReconcileTask {
     bucket: String,
     blob: String,
+    span: u64,
     count: i32,
     srv_id: Vec<u32>,
 }

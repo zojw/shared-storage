@@ -77,9 +77,9 @@ where
         &self,
         request: Request<DeleteBlobRequest>,
     ) -> Result<Response<DeleteBlobResponse>, Status> {
-        let DeleteBlobRequest { bucket, blob } = request.get_ref().to_owned();
-        self.local_store.delete_object(&bucket, &blob).await?;
-        self.status.delete_blob(&bucket, &blob).await;
+        let DeleteBlobRequest { bucket, blob, span } = request.get_ref().to_owned();
+        self.local_store.delete_object(&bucket, &blob, span).await?;
+        self.status.delete_blob(&bucket, &blob, span).await;
         Ok(Response::new(DeleteBlobResponse {}))
     }
 

@@ -85,7 +85,7 @@ impl Version {
                             end: ran.end.to_owned(),
                         }),
                         level: blob.level,
-                        stores: vec![], // should be filled in locator.rs
+                        spans: vec![], // should be filled in locator.rs
                     });
                     if *level != 0 && ran.end <= blob.largest {
                         break;

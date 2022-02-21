@@ -26,6 +26,7 @@ use crate::{cache::cachepb::cache_events, error::Result};
 struct BucketBlob {
     bucket: String,
     blob: String,
+    span: u64,
 }
 
 // CacheStatus maintains the memory status for current cache node.
@@ -38,6 +39,7 @@ where
 }
 
 struct Inner {
+    spans: HashSet<u64>,
     buckets: HashSet<String>,
     blobs: HashSet<BucketBlob>,
     last_heartbeat: u64,
@@ -45,10 +47,22 @@ struct Inner {
 }
 
 enum Event {
-    AddBucket { bucket: String },
-    DeleteBucket { bucket: String },
-    AddBlob { bucket: String, blob: String },
-    DeleteBlob { bucket: String, blob: String },
+    AddBucket {
+        bucket: String,
+    },
+    DeleteBucket {
+        bucket: String,
+    },
+    AddBlob {
+        bucket: String,
+        blob: String,
+        span: u64,
+    },
+    DeleteBlob {
+        bucket: String,
+        blob: String,
+        span: u64,
+    },
 }
 
 impl<S> CacheStatus<S>
@@ -62,6 +76,7 @@ where
                 blobs: HashSet::new(),
                 last_heartbeat: 0,
                 delta: Vec::new(),
+                spans: HashSet::new(),
             })),
             store,
         };
@@ -76,9 +91,11 @@ where
         for bucket in &inner.buckets {
             let bs = self.store.list_objects(bucket).await?;
             for b in bs {
+                let span_blob = b.split("@").collect::<Vec<_>>(); // FIXME:!!! when support drop span
                 blobs.insert(BucketBlob {
-                    bucket: b.to_owned(),
-                    blob: b.to_owned(),
+                    bucket: bucket.to_owned(),
+                    span: span_blob[0].parse().unwrap(),
+                    blob: span_blob[1].to_owned(),
                 });
             }
         }
@@ -102,30 +119,34 @@ where
         });
     }
 
-    pub async fn add_blob(&self, bucket: &str, blob: &str) {
+    pub async fn add_blob(&self, bucket: &str, blob: &str, span: u64) {
         let mut inner = self.inner.lock().await;
         assert!(inner.buckets.contains(bucket));
         inner.blobs.insert(BucketBlob {
             bucket: bucket.to_owned(),
             blob: blob.to_owned(),
+            span: span.to_owned(),
         });
         inner.delta.push(Event::AddBlob {
             bucket: bucket.to_owned(),
             blob: blob.to_owned(),
+            span: span.to_owned(),
         });
     }
 
-    pub async fn delete_blob(&self, bucket: &str, blob: &str) {
+    pub async fn delete_blob(&self, bucket: &str, blob: &str, span: u64) {
         let mut inner = self.inner.lock().await;
         assert!(inner.buckets.contains(bucket));
         let bo = BucketBlob {
             bucket: bucket.to_owned(),
             blob: blob.to_owned(),
+            span: span.to_owned(),
         };
         inner.blobs.remove(&bo);
         inner.delta.push(Event::DeleteBlob {
             bucket: bucket.to_owned(),
             blob: blob.to_owned(),
+            span: span.to_owned(),
         });
     }
 
@@ -141,12 +162,14 @@ where
                 typ: cachepb::cache_event::EventType::AddBucket.into(),
                 bucket: b,
                 blob: "".to_owned(),
+                span: 0,
             });
 
             let blob_added = inner.blobs.iter().cloned().map(|b| cachepb::CacheEvent {
                 typ: EventType::AddBlob.into(),
                 bucket: b.bucket,
                 blob: b.blob,
+                span: b.span,
             });
 
             let events = bucket_added.chain(blob_added).collect();
@@ -163,21 +186,25 @@ where
                         typ: cachepb::cache_event::EventType::AddBucket.into(),
                         bucket: bucket.to_owned(),
                         blob: "".to_owned(),
+                        span: 0,
                     }),
                     Event::DeleteBucket { bucket } => events.push(cachepb::CacheEvent {
                         typ: cachepb::cache_event::EventType::DeleteBucket.into(),
                         bucket: bucket.to_owned(),
                         blob: "".to_owned(),
+                        span: 0,
                     }),
-                    Event::AddBlob { bucket, blob } => events.push(cachepb::CacheEvent {
+                    Event::AddBlob { bucket, blob, span } => events.push(cachepb::CacheEvent {
                         typ: cachepb::cache_event::EventType::AddBlob.into(),
                         bucket: bucket.to_owned(),
                         blob: blob.to_owned(),
+                        span: span.to_owned(),
                     }),
-                    Event::DeleteBlob { bucket, blob } => events.push(cachepb::CacheEvent {
+                    Event::DeleteBlob { bucket, blob, span } => events.push(cachepb::CacheEvent {
                         typ: cachepb::cache_event::EventType::DeleteBlob.into(),
                         bucket: bucket.to_owned(),
                         blob: blob.to_owned(),
+                        span: span.to_owned(),
                     }),
                 }
             }

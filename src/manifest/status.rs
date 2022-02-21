@@ -53,12 +53,17 @@ where
 pub struct BucketBlob {
     pub bucket: String,
     pub blob: String,
+    pub span_id: u64,
 }
+
+type NodesInSpan = HashMap<u64, HashSet<u32>>; // span-id => server-id-list
+type NodeSpanForBlob = HashMap<String, NodesInSpan>; // blob -> nodespans
+type BlobInBucket = HashMap<String, NodeSpanForBlob>; // bucket -> bucket-info
 
 struct Inner {
     seq: u64,
-    blob_loc: HashMap<String, HashMap<String, HashSet<u32>>>, /* {bucket -> {blob -> server-id
-                                                               * lists}} */
+    blob_loc: BlobInBucket,
+
     srv_blob: HashMap<u32, HashSet<BucketBlob>>, // {server-id} -> [{bucket, blob}..]
     srv_bucket: HashMap<u32, HashSet<String>>,   // {server-id} -> [server-id, ...]
 }
@@ -111,37 +116,50 @@ where
         self.stop.store(true, Relaxed)
     }
 
-    pub async fn get_server_id(&self, bucket: &str, blob: &str) -> Option<Vec<u32>> {
+    pub async fn locate_span_server(&self, bucket: &str, blob: &str) -> Option<Vec<(u64, u32)>> {
         let inner = self.inner.lock().await;
-        Some(Vec::from_iter(
-            inner.blob_loc.get(bucket)?.get(blob)?.iter().cloned(),
-        ))
+        let mut r = Vec::new();
+        for (span, nodes) in inner.blob_loc.get(bucket)?.get(blob)? {
+            for node in nodes {
+                r.push((span.to_owned(), node.to_owned()))
+            }
+        }
+        Some(r)
     }
 
-    pub async fn get_bucket_replica(&self, bucket: &str, blob: &str) -> Option<HashSet<u32>> {
+    pub async fn get_bucket_replica(
+        &self,
+        bucket: &str,
+        blob: &str,
+        span: &u64,
+    ) -> Option<HashSet<u32>> {
         let inner = self.inner.lock().await;
         let blobs = inner.blob_loc.get(bucket)?;
-        let replicas = blobs.get(blob)?;
+        let spans = blobs.get(blob)?;
+        let replicas = spans.get(span)?;
         Some(replicas.to_owned())
     }
 
-    pub async fn get_bucket_replca_view(&self) -> HashMap<BucketBlob, HashSet<u32>> {
+    pub async fn get_bucket_replica_view(&self) -> HashMap<BucketBlob, HashSet<u32>> {
         let inner = self.inner.lock().await;
-        inner
-            .blob_loc
-            .iter()
-            .flat_map(|(bucket, blobs)| {
-                blobs.iter().map(|(blob, srvs)| {
-                    (
+        let mut result = HashMap::new();
+
+        for (bucket, blobs) in &inner.blob_loc {
+            for (blob, spans) in blobs {
+                for (span, srvs) in spans {
+                    result.insert(
                         BucketBlob {
                             bucket: bucket.to_owned(),
                             blob: blob.to_owned(),
+                            span_id: span.to_owned(),
                         },
                         srvs.to_owned(),
-                    )
-                })
-            })
-            .collect::<HashMap<BucketBlob, HashSet<u32>>>()
+                    );
+                }
+            }
+        }
+
+        result
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -216,6 +234,7 @@ where
                     wait_clean_blobs.push(BucketBlob {
                         bucket: b.bucket.to_owned(),
                         blob: b.blob.to_owned(),
+                        span_id: b.span_id.to_owned(),
                     })
                 }
             }
@@ -262,6 +281,7 @@ where
                     blobs.insert(BucketBlob {
                         bucket: ev.bucket.to_owned(),
                         blob: ev.blob.to_owned(),
+                        span_id: ev.span.to_owned(),
                     });
 
                     match inner.blob_loc.entry(ev.bucket.to_owned()) {
@@ -273,22 +293,32 @@ where
                     let blobs = inner.blob_loc.get_mut(&ev.bucket).unwrap();
                     match blobs.entry(ev.blob.to_owned()) {
                         hash_map::Entry::Vacant(ent) => {
-                            ent.insert(HashSet::new());
+                            ent.insert(HashMap::new());
                         }
                         hash_map::Entry::Occupied(_) => {}
                     };
-                    blobs.get_mut(&ev.blob).unwrap().insert(srv_id);
+                    let spans = blobs.get_mut(&ev.blob).unwrap();
+                    match spans.entry(ev.span.to_owned()) {
+                        hash_map::Entry::Vacant(ent) => {
+                            ent.insert(HashSet::new());
+                        }
+                        hash_map::Entry::Occupied(_) => {}
+                    }
+                    spans.get_mut(&ev.span).unwrap().insert(srv_id.to_owned());
                 }
                 _ if ev.typ == EventType::DeleteBlob as i32 => {
                     let blobs = inner.srv_blob.get_mut(&srv_id).unwrap();
                     blobs.remove(&BucketBlob {
                         bucket: ev.bucket.to_owned(),
                         blob: ev.blob.to_owned(),
+                        span_id: ev.span.to_owned(),
                     });
 
                     if let Some(blobs) = inner.blob_loc.get_mut(&ev.bucket) {
-                        if let Some(srvs) = blobs.get_mut(&ev.blob) {
-                            srvs.remove(&srv_id);
+                        if let Some(spans) = blobs.get_mut(&ev.blob) {
+                            if let Some(srvs) = spans.get_mut(&ev.span) {
+                                srvs.remove(&srv_id);
+                            }
                         }
                     }
                 }

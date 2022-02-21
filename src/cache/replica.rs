@@ -54,6 +54,7 @@ where
         &self,
         bucket: &str,
         object: &str,
+        span: u64,
         content: Vec<u8>,
         opt: Option<PutOptions>,
     ) -> Result<()> {
@@ -77,6 +78,7 @@ where
         let req = Request::new(BlobRequest {
             bucket: bucket.to_owned(),
             blob: object.to_owned(),
+            span: span.to_owned(),
             content: content.to_owned(),
             request_server_id: req_svc[0].server_id,
             replica_servers: replica,

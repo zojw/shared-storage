@@ -79,10 +79,10 @@ where
         &self,
         request: tonic::Request<RefillCacheRequest>,
     ) -> Result<tonic::Response<RefillCacheResponse>, tonic::Status> {
-        let RefillCacheRequest { bucket, blob } = request.get_ref();
+        let RefillCacheRequest { bucket, blob, span } = request.get_ref();
         let content = self.blob_store.read_object(bucket, blob).await?;
         self.local_store
-            .put_object(bucket, blob, content, None)
+            .put_object(bucket, &blob, span.to_owned(), content, None)
             .await?;
         Ok(Response::new(RefillCacheResponse {}))
     }
@@ -91,8 +91,11 @@ where
         &self,
         request: tonic::Request<RemoveCacheRequest>,
     ) -> Result<tonic::Response<RemoveCacheResponse>, tonic::Status> {
-        let RemoveCacheRequest { bucket, blob } = request.get_ref();
-        self.local_store.delete_object(bucket, blob).await?;
+        let RemoveCacheRequest { bucket, blob, span } = request.get_ref();
+        let blob = format!("{}@{}", span, blob);
+        self.local_store
+            .delete_object(bucket, &blob, span.to_owned())
+            .await?;
         Ok(Response::new(RemoveCacheResponse {}))
     }
 }

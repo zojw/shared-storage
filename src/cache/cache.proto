@@ -44,7 +44,7 @@ message DeleteBucketRequest { string bucket = 1; }
 
 message DeleteBucketResponse {}
 
-message DeleteBlobRequest { string bucket = 1; string blob = 2; }
+message DeleteBlobRequest { string bucket = 1; string blob = 2; uint64 span = 3; }
 
 message DeleteBlobResponse {}
 
@@ -85,18 +85,21 @@ message CacheEvent {
   enum EventType {
     AddBucket = 0;
     DeleteBucket = 1;
-    AddBlob = 2;
-    DeleteBlob = 3;
+    AddSpan = 2;
+    DeletSpan = 3;
+    AddBlob = 4;
+    DeleteBlob = 5;
   }
   EventType typ = 4;
   string bucket = 5;
-  string blob = 6;
+  uint64 span = 6;
+  string blob = 7;
 }
 
-message RefillCacheRequest { string bucket = 1; string blob = 2; }
+message RefillCacheRequest { string bucket = 1; string blob = 2; uint64 span = 3; }
 
 message RefillCacheResponse {}
 
-message RemoveCacheRequest { string bucket = 1; string blob = 2; }
+message RemoveCacheRequest { string bucket = 1; string blob = 2; uint64 span = 3; }
 
 message RemoveCacheResponse {}

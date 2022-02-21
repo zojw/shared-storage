@@ -85,8 +85,13 @@ message Location {
 	KeyRange range = 1;
 	string bucket = 2;
 	string blob = 3;
-	repeated uint32 stores = 4;
+	repeated SpanLoc spans = 4;
 	uint32 level = 5;
+}
+
+message SpanLoc {
+	uint64 span_id = 1;
+	uint32 server_id = 2;
 }
 
 message PrepareUploadRequest {
@@ -116,6 +121,7 @@ message BlobRequest {
 	bytes content = 3;
 	uint32 request_server_id = 4;
 	repeated uint32 replica_servers = 5;
+	uint64 span = 6;
 }
 
 message BlobResponse {}

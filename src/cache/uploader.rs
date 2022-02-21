@@ -72,6 +72,7 @@ where
             .put_object(
                 &request.bucket,
                 &request.blob,
+                request.span.to_owned(),
                 request.content.to_owned(),
                 None,
             )
@@ -84,12 +85,15 @@ where
                 .put_object(
                     &request.bucket,
                     &request.blob,
+                    request.span.to_owned(),
                     request.content.to_owned(),
                     Some(PutOptions { replica_srv }),
                 )
                 .await?;
         }
-        self.status.add_blob(&request.bucket, &request.blob).await;
+        self.status
+            .add_blob(&request.bucket, &request.blob, request.span.to_owned())
+            .await;
         Ok(Response::new(BlobResponse {}))
     }
 }

@@ -56,8 +56,19 @@ where
         let current = self.version_set.current_version().await;
         let mut locations = current.get_location(ranges);
         for l in locations.iter_mut() {
-            if let Some(stores) = self.manifest_status.get_server_id(&l.bucket, &l.blob).await {
-                l.stores = stores;
+            if let Some(span_nodes) = self
+                .manifest_status
+                .locate_span_server(&l.bucket, &l.blob)
+                .await
+            {
+                let mut spans = Vec::new();
+                for (span, node) in span_nodes {
+                    spans.push(apipb::SpanLoc {
+                        span_id: span,
+                        server_id: node,
+                    })
+                }
+                l.spans = spans;
             }
         }
         Ok(Response::new(apipb::LocateResponse { locations }))

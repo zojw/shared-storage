@@ -84,25 +84,32 @@ impl super::CacheStorage for MemCacheStore {
         }
     }
 
-    async fn read_object(&self, bucket_name: &str, object_name: &str) -> Result<Vec<u8>> {
+    async fn read_object(
+        &self,
+        bucket_name: &str,
+        object_name: &str,
+        span: u64,
+    ) -> Result<Vec<u8>> {
         if let Some(bucket) = self.bucket(bucket_name).await {
-            match bucket.lock().await.get(object_name) {
+            let key = format!("{}@{}", span, object_name);
+            match bucket.lock().await.get(&key) {
                 Some(object) => {
                     let mut dst = vec![0u8; object.len()];
                     dst.copy_from_slice(object);
                     Ok(dst)
                 }
-                None => Err(Error::NotFound(format!("object '{}'", object_name))),
+                None => Err(Error::NotFound(format!("object '{}'", &key))),
             }
         } else {
             Err(Error::NotFound(format!("bucket '{}'", bucket_name)))
         }
     }
 
-    async fn delete_object(&self, bucket_name: &str, object_name: &str) -> Result<()> {
+    async fn delete_object(&self, bucket_name: &str, object_name: &str, span: u64) -> Result<()> {
         if let Some(bucket) = self.bucket(bucket_name).await {
             let mut bucket = bucket.lock().await;
-            bucket.remove(object_name);
+            let key = format!("{}@{}", span, object_name);
+            bucket.remove(&key);
         }
         Ok(())
     }
@@ -114,12 +121,14 @@ impl super::ObjectPutter for MemCacheStore {
         &self,
         bucket_name: &str,
         object_name: &str,
+        span_id: u64,
         content: Vec<u8>,
         _opt: Option<PutOptions>,
     ) -> Result<()> {
         if let Some(bucket) = self.bucket(bucket_name).await {
             let mut bucket = bucket.lock().await;
-            bucket.insert(object_name.to_owned(), Arc::new(content));
+            let key = format!("{}@{}", span_id, object_name);
+            bucket.insert(key.to_owned(), Arc::new(content));
             Ok(())
         } else {
             Err(Error::NotFound(format!("bucket '{}'", bucket_name)))

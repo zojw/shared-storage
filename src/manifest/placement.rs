@@ -82,8 +82,8 @@ where
     S: MetaStorage + Send + Sync + 'static,
 {
     pub async fn new(version_set: Arc<VersionSet<S>>, reconciler: Arc<Reconciler<D, S>>) -> Self {
-        let smallest_key = b"a".to_vec();
-        let biggest_key: Vec<u8> = b"z".to_vec();
+        let smallest_key = b"0".to_vec();
+        let biggest_key: Vec<u8> = b"9".to_vec();
         let current_version = version_set.current_version().await;
         let (key_spans, id_spans) = Self::recover_span_blobs(current_version.clone()).await;
         let inner = Arc::new(Mutex::new(Inner {

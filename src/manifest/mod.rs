@@ -28,6 +28,7 @@ pub mod manifestpb {
 pub use blobctrl::BlobControl;
 pub use bucket::BucketService;
 pub use locator::CacheServerLocator;
+pub use placement::{Placement, SpanBasedBlobPlacement};
 pub use reconcile::Reconciler;
 pub use status::{HeartbeatTask, ManifestStatus};
 pub use versions::VersionSet;

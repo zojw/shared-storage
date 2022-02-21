@@ -49,7 +49,7 @@ use crate::{
     manifest::{
         manifestpb::bucket_service_server::BucketServiceServer as ManifestBucketServiceServer,
         storage::MemBlobMetaStore, BlobControl, BucketService as ManifestBucketService,
-        CacheServerLocator,
+        CacheServerLocator, SpanBasedBlobPlacement,
     },
 };
 
@@ -76,7 +76,12 @@ struct Inner {
 
     manifest_blob_ctrl: Vec<(
         u32,
-        BlobUploadControlServer<BlobControl<MemBlobMetaStore<MemBlobStore>>>,
+        BlobUploadControlServer<
+            BlobControl<
+                MemBlobMetaStore<MemBlobStore>,
+                SpanBasedBlobPlacement<LocalSvcDiscover, MemBlobMetaStore<MemBlobStore>>,
+            >,
+        >,
     )>,
     manifest_locator: Vec<(
         u32,
@@ -111,7 +116,12 @@ impl LocalSvcDiscover {
     pub async fn register_manifest_svc(
         &self,
         srv_id: u32,
-        blob_ctrl: BlobUploadControlServer<BlobControl<MemBlobMetaStore<MemBlobStore>>>,
+        blob_ctrl: BlobUploadControlServer<
+            BlobControl<
+                MemBlobMetaStore<MemBlobStore>,
+                SpanBasedBlobPlacement<LocalSvcDiscover, MemBlobMetaStore<MemBlobStore>>,
+            >,
+        >,
         bucket_svc: ManifestBucketServiceServer<
             ManifestBucketService<MemBlobStore, MemBlobMetaStore<MemBlobStore>, LocalSvcDiscover>,
         >,

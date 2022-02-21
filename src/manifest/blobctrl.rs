@@ -17,32 +17,42 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tonic::{Request, Response, Status};
 
-use super::{storage, versions::VersionSet};
+use super::{
+    placement, storage,
+    versions::{BlobDesc, VersionSet},
+};
 use crate::{
     client::apipb::{self, FinishUploadResponse, KeyRange, Location, PrepareUploadResponse},
     manifest::storage::{NewBlob, StagingBlob, StagingOperation, VersionEdit},
 };
 
-pub struct BlobControl<S>
+pub struct BlobControl<S, P>
 where
     S: storage::MetaStorage,
+    P: placement::Placement,
 {
     version_set: Arc<VersionSet<S>>,
+    placement: Arc<P>,
 }
 
-impl<S> BlobControl<S>
+impl<S, P> BlobControl<S, P>
 where
     S: storage::MetaStorage,
+    P: placement::Placement,
 {
-    pub fn new(version_set: Arc<VersionSet<S>>) -> Self {
-        Self { version_set }
+    pub fn new(version_set: Arc<VersionSet<S>>, placement: Arc<P>) -> Self {
+        Self {
+            version_set,
+            placement,
+        }
     }
 }
 
 #[async_trait]
-impl<S> apipb::blob_upload_control_server::BlobUploadControl for BlobControl<S>
+impl<S, P> apipb::blob_upload_control_server::BlobUploadControl for BlobControl<S, P>
 where
     S: storage::MetaStorage + Sync + Send + 'static,
+    P: placement::Placement + Sync + Send + 'static,
 {
     async fn prepare_upload(
         &self,
@@ -112,13 +122,16 @@ where
         let token = request.get_ref().upload_token.to_owned();
         let current = self.version_set.current_version().await;
         let op = current.get_stage(&token).unwrap();
-        let add_blobs: Vec<NewBlob> = op
+        let mut add_blobs: Vec<NewBlob> = op
             .add_blob
             .iter()
             .map(|ab| ab.desc.as_ref().unwrap().to_owned())
             .collect();
 
-        // TODO: refill span-id at here.
+        for b in add_blobs.iter_mut() {
+            let new_blob = self.placement.add_new_blob(b.to_owned()).await?;
+            b.span_id = new_blob.span_id;
+        }
 
         self.version_set
             .log_and_apply(vec![VersionEdit {

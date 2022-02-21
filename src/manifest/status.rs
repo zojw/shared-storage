@@ -57,9 +57,10 @@ pub struct BucketBlob {
 
 struct Inner {
     seq: u64,
-    blob_loc: HashMap<String, HashMap<String, HashSet<u32>>>, // {bucket + blob} -> server-id lists
-    srv_blob: HashMap<u32, HashSet<BucketBlob>>,              // {server-id} -> [{bucket, blob}..]
-    srv_bucket: HashMap<u32, HashSet<String>>,                // {server-id} -> [server-id, ...]
+    blob_loc: HashMap<String, HashMap<String, HashSet<u32>>>, /* {bucket -> {blob -> server-id
+                                                               * lists}} */
+    srv_blob: HashMap<u32, HashSet<BucketBlob>>, // {server-id} -> [{bucket, blob}..]
+    srv_bucket: HashMap<u32, HashSet<String>>,   // {server-id} -> [server-id, ...]
 }
 
 #[derive(Clone)]
@@ -117,7 +118,14 @@ where
         ))
     }
 
-    pub async fn get_bucket_replca_count_view(&self) -> HashMap<BucketBlob, HashSet<u32>> {
+    pub async fn get_bucket_replica(&self, bucket: &str, blob: &str) -> Option<HashSet<u32>> {
+        let inner = self.inner.lock().await;
+        let blobs = inner.blob_loc.get(bucket)?;
+        let replicas = blobs.get(blob)?;
+        Some(replicas.to_owned())
+    }
+
+    pub async fn get_bucket_replca_view(&self) -> HashMap<BucketBlob, HashSet<u32>> {
         let inner = self.inner.lock().await;
         inner
             .blob_loc

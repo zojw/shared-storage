@@ -35,8 +35,7 @@ mod tests {
                 bucket_service_server::BucketServiceServer as NodeBucketServiceServer,
                 node_cache_manage_service_server::NodeCacheManageServiceServer,
             },
-            CacheReplica, CacheStatus, MemCacheStore, NodeBucketService, NodeCacheManager,
-            Uploader,
+            CacheStatus, MemCacheStore, NodeBucketService, NodeCacheManager, Uploader,
         },
         client::{apipb, cli::Client},
         discover::{Discover, LocalSvcDiscover},
@@ -44,7 +43,7 @@ mod tests {
         manifest::{
             manifestpb::bucket_service_server::BucketServiceServer as ManifestBucketServiceServer,
             storage::MemBlobMetaStore, BlobControl, BucketService, CacheServerLocator,
-            ManifestStatus, Reconciler, VersionSet,
+            ManifestStatus, Reconciler, SpanBasedBlobPlacement, VersionSet,
         },
     };
 
@@ -135,11 +134,22 @@ mod tests {
 
         // 2. manifest server manage cache node and blob_store(grpc service)
         let (_, manifest_status, reconcile) = {
+            let manifest_status = build_and_run_manifest_status(discover.clone()).await?;
+
             let meta_store = MemBlobMetaStore::new(blob_store.clone()).await?;
             let version_set = Arc::new(VersionSet::new(meta_store).await?);
-            let blob_ctrl_svc = BlobUploadControlServer::new(BlobControl::new(version_set.clone()));
-
-            let manifest_status = build_and_run_manifest_status(discover.clone()).await?;
+            let reconciler = Arc::new(Reconciler::new(
+                discover.clone(),
+                version_set.clone(),
+                manifest_status.clone(),
+            ));
+            let placement = Arc::new(
+                SpanBasedBlobPlacement::new(version_set.clone(), reconciler.clone()).await,
+            );
+            let blob_ctrl_svc = BlobUploadControlServer::new(BlobControl::new(
+                version_set.clone(),
+                placement.clone(),
+            ));
 
             let reconcile = build_and_run_reconciler(
                 discover.clone(),

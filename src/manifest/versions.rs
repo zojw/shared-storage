@@ -26,7 +26,7 @@ use crate::{
     manifest::storage::{StagingOperation, VersionEdit},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct BlobDesc {
     pub bucket: String,
     pub blob: String,

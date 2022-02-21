@@ -14,16 +14,19 @@
 
 use std::{
     borrow::BorrowMut,
-    cell::RefCell,
     collections::{BTreeMap, HashMap},
-    rc::Rc,
     sync::Arc,
 };
 
+use async_trait::async_trait;
 use tokio::sync::{Mutex, MutexGuard};
 
-use super::versions::{BlobDesc, Version};
-use crate::error::Result;
+use super::{
+    storage::MetaStorage,
+    versions::{BlobDesc, Version},
+    Reconciler, VersionSet,
+};
+use crate::{discover::Discover, error::Result, manifest::storage};
 
 // TODO: it's fake value
 const MAX_SPAN_SIZE: u64 = 10;
@@ -47,52 +50,61 @@ struct SpanBlob {
     object: u64,
 }
 
-struct SpanBasedBlobPlacement {
-    inner: Arc<Mutex<Inner>>,
+#[async_trait]
+pub trait Placement {
+    async fn add_new_blob(&self, blob: storage::NewBlob) -> Result<storage::NewBlob>;
 }
 
-struct Inner {
-    version: Version,
-    key_spans: BTreeMap<Vec<u8>, Rc<RefCell<Span>>>,
-    id_spans: HashMap<u64, Rc<RefCell<Span>>>,
+pub struct SpanBasedBlobPlacement<D, S>
+where
+    D: Discover,
+    S: MetaStorage,
+{
+    inner: Arc<Mutex<Inner<S>>>,
+    reconciler: Arc<Reconciler<D, S>>,
+}
+
+struct Inner<S>
+where
+    S: MetaStorage,
+{
+    version_set: Arc<VersionSet<S>>,
+    key_spans: BTreeMap<Vec<u8>, Arc<Mutex<Span>>>,
+    id_spans: HashMap<u64, Arc<Mutex<Span>>>,
     max_span_id: u64,
     smallest_key: Vec<u8>,
     biggest_key: Vec<u8>,
 }
 
-impl SpanBasedBlobPlacement {
-    pub async fn from(version: Version) -> Self {
+impl<D, S> SpanBasedBlobPlacement<D, S>
+where
+    D: Discover + Send + Sync + 'static,
+    S: MetaStorage + Send + Sync + 'static,
+{
+    pub async fn new(version_set: Arc<VersionSet<S>>, reconciler: Arc<Reconciler<D, S>>) -> Self {
         let smallest_key = b"a".to_vec();
         let biggest_key: Vec<u8> = b"z".to_vec();
-        let (key_spans, id_spans) = Self::recover_span_blobs(version.to_owned()).await;
+        let current_version = version_set.current_version().await;
+        let (key_spans, id_spans) = Self::recover_span_blobs(current_version.clone()).await;
         let inner = Arc::new(Mutex::new(Inner {
-            version,
+            version_set,
             key_spans,
             id_spans,
             max_span_id: 0,
             smallest_key,
             biggest_key,
         }));
-        Self { inner }
+        Self { inner, reconciler }
     }
 }
 
-impl SpanBasedBlobPlacement {
-    async fn recover_span_blobs(
-        version: Version,
-    ) -> (
-        BTreeMap<Vec<u8>, Rc<RefCell<Span>>>,
-        HashMap<u64, Rc<RefCell<Span>>>,
-    ) {
-        let key_spans = BTreeMap::new();
-        let id_spans = HashMap::new();
-        for desc in version.list_all_blobs() {
-            // TODO: use span-id in desc to rebuild span index.
-        }
-        (key_spans, id_spans)
-    }
-
-    async fn add_new_blob(&self, blob: BlobDesc) -> Result<BlobDesc> {
+#[async_trait]
+impl<D, S> Placement for SpanBasedBlobPlacement<D, S>
+where
+    D: Discover + Sync + Send + 'static,
+    S: MetaStorage + Sync + Send + 'static,
+{
+    async fn add_new_blob(&self, blob: storage::NewBlob) -> Result<storage::NewBlob> {
         let mut inner = self.inner.lock().await;
 
         // init genesis span if first use.
@@ -110,16 +122,39 @@ impl SpanBasedBlobPlacement {
         }
 
         // reconcile after this change.
+        self.reconciler
+            .reconcile_blob(&blob.bucket, &blob.blob)
+            .await?;
 
         let mut blob = blob.clone();
         blob.span_id = added_span;
         Ok(blob)
     }
+}
 
-    async fn init_genesis_span(inner: &mut MutexGuard<'_, Inner>) -> Result<()> {
+impl<D, S> SpanBasedBlobPlacement<D, S>
+where
+    D: Discover,
+    S: MetaStorage,
+{
+    async fn recover_span_blobs(
+        version: Arc<Version>,
+    ) -> (
+        BTreeMap<Vec<u8>, Arc<Mutex<Span>>>,
+        HashMap<u64, Arc<Mutex<Span>>>,
+    ) {
+        let key_spans = BTreeMap::new();
+        let id_spans = HashMap::new();
+        for _desc in version.list_all_blobs() {
+            // TODO: use span-id in desc to rebuild span index.
+        }
+        (key_spans, id_spans)
+    }
+
+    async fn init_genesis_span(inner: &mut MutexGuard<'_, Inner<S>>) -> Result<()> {
         inner.max_span_id += 1;
         let id = inner.max_span_id;
-        let span = Rc::new(RefCell::new(Span {
+        let span = Arc::new(Mutex::new(Span {
             id,
             start: inner.smallest_key.to_owned(),
             end: inner.biggest_key.to_owned(),
@@ -130,28 +165,33 @@ impl SpanBasedBlobPlacement {
         inner.id_spans.insert(id, span.clone());
         inner
             .key_spans
-            .insert(span.borrow().start.to_owned(), span.clone());
+            .insert(span.lock().await.start.to_owned(), span.clone());
         Ok(())
     }
 
-    async fn add_blob_to_span(inner: &mut MutexGuard<'_, Inner>, desc: &BlobDesc) -> Result<u64> {
-        let mut rs = inner.key_spans.range(..desc.smallest.to_owned());
+    async fn add_blob_to_span(
+        inner: &mut MutexGuard<'_, Inner<S>>,
+        desc: &storage::NewBlob,
+    ) -> Result<u64> {
+        let stats = desc.stats.as_ref().unwrap().to_owned();
+        let mut rs = inner.key_spans.range(..stats.smallest.to_owned());
         let span_id = loop {
             let (_, r) = rs.next_back().unwrap();
-            if r.borrow().end.to_owned() > desc.smallest.to_owned() {
-                break r.borrow().id.to_owned();
+            let r = r.lock().await;
+            if r.end.to_owned() > stats.smallest.to_owned() {
+                break r.id.to_owned();
             }
         };
         let span = inner.id_spans.get_mut(&span_id).unwrap();
-        let mut span = span.as_ref().borrow_mut();
+        let mut span = span.lock().await;
         span.blobs.insert(
-            desc.smallest.to_owned(),
+            stats.smallest.to_owned(),
             SpanBlob {
                 bucket: desc.bucket.to_owned(),
                 blob: desc.blob.to_owned(),
                 span_id: span_id.to_owned(),
-                start: desc.smallest.to_owned(),
-                end: desc.largest.to_owned(),
+                start: stats.smallest.to_owned(),
+                end: stats.largest.to_owned(),
                 size: desc.size.to_owned(),
                 object: desc.objects.to_owned(),
             },
@@ -162,7 +202,7 @@ impl SpanBasedBlobPlacement {
     }
 
     async fn split_if_need(
-        inner: &mut MutexGuard<'_, Inner>,
+        inner: &mut MutexGuard<'_, Inner<S>>,
         added_span: &u64,
     ) -> Result<Option<Vec<u8>>> {
         let span = inner
@@ -173,7 +213,7 @@ impl SpanBasedBlobPlacement {
             .as_ref();
 
         // need split when it over the size threshold.
-        if span.borrow().size < MAX_SPAN_SIZE {
+        if span.lock().await.size < MAX_SPAN_SIZE {
             return Ok(None);
         }
 
@@ -181,7 +221,7 @@ impl SpanBasedBlobPlacement {
         let split_at = {
             let mut lhs = 0;
             let mut split_at = None;
-            let span = span.borrow();
+            let span = span.lock().await;
             let mut iter = span.blobs.iter();
             loop {
                 if let Some((_, blob)) = iter.next() {
@@ -203,32 +243,36 @@ impl SpanBasedBlobPlacement {
     }
 
     async fn do_split(
-        inner: &mut MutexGuard<'_, Inner>,
+        inner: &mut MutexGuard<'_, Inner<S>>,
         split_at: Vec<u8>,
         added_span: &u64,
     ) -> Result<()> {
         inner.max_span_id += 1;
         let new_span_id = inner.max_span_id;
-        let span = inner.id_spans.get(added_span).unwrap();
-        let mut new_span = Span {
-            id: new_span_id,
-            start: split_at.to_owned(),
-            end: span.borrow().end.to_owned(),
-            blobs: BTreeMap::new(),
-            size: 0,
-            objects: 0,
+        let new_span = {
+            let span = inner.id_spans.get_mut(added_span).unwrap();
+            let mut span = span.lock().await;
+            let mut new_span = Span {
+                id: new_span_id,
+                start: split_at.to_owned(),
+                end: span.end.to_owned(),
+                blobs: BTreeMap::new(),
+                size: 0,
+                objects: 0,
+            };
+            let split_key = split_at.to_owned();
+            let mut new_span_blobs = span.blobs.split_off(&split_key);
+            for (_, blob) in new_span_blobs.iter_mut() {
+                blob.span_id = new_span_id;
+                new_span.size += blob.size;
+                new_span.objects += blob.object;
+            }
+            span.size -= new_span.size;
+            span.objects -= new_span.objects;
+            new_span
         };
-        let split_key = split_at.to_owned();
-        let mut new_span_blobs = span.as_ref().borrow_mut().blobs.split_off(&split_key);
-        for (_, blob) in new_span_blobs.iter_mut() {
-            blob.span_id = new_span_id;
-            new_span.size += blob.size;
-            new_span.objects += blob.object;
-        }
-        span.as_ref().borrow_mut().size -= new_span.size;
-        span.as_ref().borrow_mut().objects -= new_span.objects;
 
-        let new_span = Rc::new(RefCell::new(new_span));
+        let new_span = Arc::new(Mutex::new(new_span));
         inner.id_spans.insert(new_span_id, new_span.to_owned());
         inner
             .key_spans

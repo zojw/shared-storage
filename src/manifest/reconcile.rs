@@ -52,6 +52,54 @@ where
     D: Discover + Send + Sync + 'static,
     S: MetaStorage + Sync + Send + 'static,
 {
+    pub async fn reconcile_blob(&self, bucket: &str, blob: &str) -> Result<()> {
+        let ver = self.version_set.current_version().await;
+
+        let desired_replica_count = ver.get_blob(bucket, blob).unwrap_or_default().replica_count;
+        let current_replicas = self
+            .status
+            .get_bucket_replica(bucket, blob)
+            .await
+            .unwrap_or_default();
+
+        if desired_replica_count == current_replicas.len() as u32 {
+            return Ok(());
+        }
+
+        let all_cache_srvs = self
+            .discover
+            .list(ServiceType::NodeCacheManageSvc)
+            .await?
+            .iter()
+            .map(|s| s.server_id)
+            .collect::<Vec<u32>>();
+        let mut other_srvs = all_cache_srvs.clone();
+        other_srvs.retain(|s| !current_replicas.contains(s));
+
+        if desired_replica_count > current_replicas.len() as u32 {
+            let add_srvs = Self::sort_server_by_add_score(other_srvs);
+            let add_srvs = (&add_srvs
+                [..(desired_replica_count as usize - current_replicas.len() as usize)])
+                .to_owned();
+            self.refill_cache_on_srvs(bucket, blob, &add_srvs).await?;
+            return Ok(());
+        }
+
+        let remove_srvs = Self::sort_server_by_remove_score(other_srvs);
+        let remove_srvs = (&remove_srvs
+            [..(current_replicas.len() as usize - desired_replica_count as usize)])
+            .to_owned();
+        self.remove_cache_on_srvs(bucket, blob, &remove_srvs)
+            .await?;
+        Ok(())
+    }
+}
+
+impl<D, S> Reconciler<D, S>
+where
+    D: Discover + Send + Sync + 'static,
+    S: MetaStorage + Sync + Send + 'static,
+{
     pub fn new(
         discover: Arc<D>,
         version_set: Arc<VersionSet<S>>,
@@ -82,7 +130,7 @@ where
     async fn try_reconcile(&self) -> Result<()> {
         let ver = self.version_set.current_version().await;
         let desired_blobs = ver.list_all_blobs();
-        let mut current_blobs = self.status.get_bucket_replca_count_view().await;
+        let mut current_blobs = self.status.get_bucket_replca_view().await;
 
         let mut ops = Vec::new();
         for desired_blob in desired_blobs {
@@ -147,10 +195,10 @@ where
 
         for (task, change_srvs) in op_srvs {
             if task.count < 0 {
-                self.refill_cache_on_srvs(&task.bucket, &task.blob, &change_srvs)
+                self.remove_cache_on_srvs(&task.bucket, &task.blob, &change_srvs)
                     .await?;
             } else {
-                self.remove_cache_on_srvs(&task.bucket, &task.blob, &change_srvs)
+                self.refill_cache_on_srvs(&task.bucket, &task.blob, &change_srvs)
                     .await?;
             }
         }
